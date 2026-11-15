@@ -22,6 +22,7 @@
   const GRACE_SECONDS = 5;   // how long the host waits past a timer for late drawings or votes
   const VOTE_POINTS = 100;
   const TOP_BONUS = 50;
+  const NEXT_SECONDS = 8;    // after the scores, the next round (or the podium) starts on its own after this long
 
   // A drawing travels as one message (Supabase's free plan allows 256 KB per message). party.js tries these
   // in order and sends the first that fits. The party canvas is square.
@@ -133,6 +134,22 @@
     return waiting.length > 0 && waiting.every((id) => doneIds.includes(id));
   }
 
+  /* ---------- After the scores: the show moves on by itself ----------
+   * The TV shows the scores, then counts down NEXT_SECONDS and rolls the next round (after the last round: the
+   * podium) without anyone touching it. Its gold key still goes early. The host tells the phones how many seconds
+   * are left (not a clock time: phones' clocks differ), and each phone counts down from when the message lands. */
+  // What comes after round `round` of `total`: another round, or the podium.
+  const afterScores = (round, total) => (Number(round) >= Number(total) ? "final" : "round");
+  // Whole seconds left until endsAt (ms), never below zero. A countdown shows 8, 7 ... 1 and acts at 0.
+  const secondsLeft = (endsAt, now) => Math.max(0, Math.ceil((endsAt - now) / 1000));
+  // The seconds a "next" message carries, kept sane: a whole number from 1 to 30, else the default.
+  function cleanNextSeconds(s) {
+    const n = Math.round(Number(s));
+    return Number.isFinite(n) && n >= 1 && n <= 30 ? n : NEXT_SECONDS;
+  }
+  // The phones' line while the TV counts down. Never a promise the game can't keep: it names what comes next.
+  const nextCall = (next) => (next === "final" ? "Winner revealed in" : "Next round in");
+
   // Who draws: everyone in the room except the host's TV, which only shows the game (a host who wants to play
   // joins on their phone like anyone else). Never more than MAX_PLAYERS.
   function drawers(playerIds, hostId) {
@@ -224,8 +241,8 @@
     return pick ? pick.rows : [String(phrase).split(/ +/).filter(Boolean)];
   }
 
-  const api = { CATEGORIES, OPTIONS, DEFAULTS, MAX_PLAYERS, MIN_DRAWERS, VOTE_SECONDS, GRACE_SECONDS, VOTE_POINTS, TOP_BONUS, MAX_IMAGE_CHARS, ENCODE_STEPS,
-    cleanSettings, wordFor, rollWord, dailyWord, shuffled, label, canVote, countVotes, scoreRound, addScores, standings, ordinal, everyoneDone, drawers, seats, wordUnits, rowWidth, balancedRows, wordRows, plainWord, NBSP };
+  const api = { CATEGORIES, OPTIONS, DEFAULTS, MAX_PLAYERS, MIN_DRAWERS, VOTE_SECONDS, GRACE_SECONDS, VOTE_POINTS, TOP_BONUS, NEXT_SECONDS, MAX_IMAGE_CHARS, ENCODE_STEPS,
+    afterScores, secondsLeft, cleanNextSeconds, nextCall, cleanSettings, wordFor, rollWord, dailyWord, shuffled, label, canVote, countVotes, scoreRound, addScores, standings, ordinal, everyoneDone, drawers, seats, wordUnits, rowWidth, balancedRows, wordRows, plainWord, NBSP };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ScrawdlePartyRules = api;
 })(typeof window !== "undefined" ? window : globalThis);

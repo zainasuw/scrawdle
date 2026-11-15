@@ -18,6 +18,8 @@
  *   pick    any  -> host  { round, owner }                                 my favourite (never my own)
  *   voted   host -> all   { round, ids }                                   who has voted so far (not for whom)
  *   results host -> all   { round, total, order, votes, points, top, scores, names }
+ *   next    host -> all   { round, next, seconds }                         the scores are up: "round" or "final" in
+ *                                                                          `seconds` (it happens on its own)
  *   final   host -> all   { scores, names }
  *   again   host -> all   {}                                               back to the lobby for another game
  *   sync    host -> all   { round, total, scores, names, settings }        for someone who joins mid-game
@@ -266,7 +268,7 @@
     function countdown(target, endsAt, onEnd, format = (s) => String(s)) {
       let t = null;
       const tick = () => {
-        const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+        const left = R.secondsLeft(endsAt, Date.now());
         const text = format(left);
         if (target.dataset.text !== text) { target.dataset.text = text; target.querySelector(".pp-clock-n").textContent = text; }
         target.classList.toggle("hurry", left <= 10 && left > 0);
@@ -505,6 +507,9 @@
       game.round = 0;
       game.scores = {};
       host.used = [];
+      // the per-round guards start over too, or a new game's round 1 would look already done after a game that
+      // stopped early (everyone left after round 1, say)
+      Object.assign(host, { voteStarted: 0, finished: 0, scoresShown: 0, advanced: 0 });
       nextRound();
     }
 
@@ -529,6 +534,7 @@
 
     function onRound(d, from) {
       if (from !== hostId || !d || !Number.isInteger(d.round) || typeof d.word !== "string" || !Array.isArray(d.players)) return;
+      stop(game.nextTimer);
       Object.assign(game, { phase: "roll", round: d.round, total: d.total, category: d.category, word: d.word, seconds: d.seconds, players: d.players, drawings: {}, done: new Set(), order: [], voted: new Set(), myPick: null });
       for (const id of d.players) if (!(id in game.scores)) game.scores[id] = 0;
       game.startedAt = Date.now();
@@ -807,8 +813,11 @@
 
     function tvScores(d) {
       stop(game.autoNext);
+      if (host.scoresShown === d.round) return; // "See the scores" pressed twice, or pressed as the reveal moved on
+      host.scoresShown = d.round;
       const rows = R.standings(game.scores, names);
-      const last = d.round >= d.total;
+      const next = R.afterScores(d.round, d.total);
+      const last = next === "final";
       const list = el("ol", { className: `pp-board-list ${rows.length <= 4 ? "few" : ""}`.trim() });
       rows.forEach((r, i) => {
         const gained = (d.points || {})[r.id] || 0;
@@ -825,12 +834,55 @@
         li.style.setProperty("--tilt", `${[-1.4, 1.1, -0.7, 1.3, -1, 0.8, -1.3, 0.9][i % 8]}deg`);
         list.append(li);
       });
+      // The gold key goes on by itself: a little teal clock dial inside it counts down (the ring drains; under
+      // reduced motion it stays full and only the number counts). Pressing it goes early.
+      const seconds = R.NEXT_SECONDS;
+      const go = () => {
+        if (host.advanced === d.round || game.phase !== "results" || game.round !== d.round) return;
+        host.advanced = d.round;
+        stop(game.nextTimer);
+        if (last) ctx.send("final", { scores: game.scores, names }); else nextRound();
+      };
+      const count = el("b", { className: "pp-next-n", textContent: String(seconds) });
+      const dial = el("span", { className: "pp-next-dial", "aria-hidden": "true" }, count);
+      dial.insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 40 40" aria-hidden="true"><circle class="pp-next-track" cx="20" cy="20" r="16.5"/><circle class="pp-next-arc" cx="20" cy="20" r="16.5" pathLength="100"/></svg>');
+      dial.style.setProperty("--secs", `${seconds}s`);
+      const key = el("button", { type: "button", className: "pp-btn pp-btn-go pp-next", onclick: go }, dial, el("span", { textContent: last ? "And the winner is…" : `Roll for round ${d.round + 1}` }));
       screen("scores",
         el("h1", { className: "pp-big-title" }, svg(I.sparkle, "pp-title-spark a"), last ? "Final scores!" : `Scores after round ${d.round}`, svg(I.sparkle, "pp-title-spark b")),
         list,
-        el("div", { className: "pp-scores-actions" },
-          button(last ? "And the winner is…" : `Roll for round ${d.round + 1}`, () => (last ? ctx.send("final", { scores: game.scores, names }) : nextRound()), "go", I.play)));
-      announce(last ? "Final scores." : `Scores after round ${d.round}.`);
+        el("div", { className: "pp-scores-actions" }, key));
+      announce(`${last ? "Final scores." : `Scores after round ${d.round}.`} ${R.nextCall(next)} ${seconds} seconds.`);
+      ctx.send("next", { round: d.round, next, seconds });
+      const endsAt = Date.now() + seconds * 1000;
+      stop(game.nextTimer);
+      game.nextTimer = every(200, () => {
+        const left = R.secondsLeft(endsAt, Date.now());
+        if (count.textContent !== String(left)) count.textContent = String(left);
+        if (left === 0) go();
+      });
+    }
+
+    // A phone hears that the scores are up on the TV: a live "Next round in 8" under its result.
+    function onNext(d, from) {
+      if (from !== hostId || !d || amHost || d.round !== game.round || game.phase !== "results") return;
+      const next = d.next === "final" ? "final" : "round";
+      const endsAt = Date.now() + R.cleanNextSeconds(d.seconds) * 1000;
+      const main = view.querySelector("main.pp-result, main.pp-wait");
+      if (!main) return;
+      const n = el("b", { className: "pp-next-n" });
+      const call = el("p", { className: "pp-next-call", role: "timer" }, el("span", { textContent: R.nextCall(next) }), " ", n);
+      const old = main.querySelector(".pp-next-call");
+      if (old) old.replaceWith(call); else main.append(call);
+      announce(`${R.nextCall(next)} ${R.secondsLeft(endsAt, Date.now())} seconds.`);
+      stop(game.nextTimer);
+      const tick = () => {
+        const left = R.secondsLeft(endsAt, Date.now());
+        if (n.textContent !== String(left)) n.textContent = String(left);
+        if (left === 0) stop(game.nextTimer); // the TV moves everyone on; this only counts
+      };
+      game.nextTimer = every(200, tick);
+      tick();
     }
 
     function phoneResult(d) {
@@ -849,7 +901,9 @@
           game.drawings[me] ? el("img", { className: "pp-result-img", src: game.drawings[me], alt: "Your drawing" }) : null)
           : el("div", { className: "pp-result-card" }, el("p", { className: "pp-result-big pp-result-none", textContent: inRound() ? "No drawing this round" : "Next round's yours!" }), el("p", { className: "pp-lead", textContent: inRound() ? "Nothing came in from you this time." : "You'll draw in the next round." })),
         myRow ? el("p", { className: "pp-rank" }, "You're ", el("b", { textContent: R.ordinal(myRow.place) }), myRow.points ? ` with ${myRow.points} ${myRow.points === 1 ? "point" : "points"}` : "") : null,
-        el("p", { className: "pp-small", textContent: d.round >= d.total ? "That was the last round. Look at the big screen!" : "See who drew what on the big screen. Next round soon!" }));
+        el("p", { className: "pp-small", textContent: d.round >= d.total ? "That was the last round. Look at the big screen!" : "See who drew what on the big screen." }),
+        // the TV's countdown fills this in once its scores are up (onNext); until then it only holds the space
+        el("p", { className: "pp-next-call pending", "aria-hidden": "true" }, el("span", { textContent: R.nextCall(R.afterScores(d.round, d.total)) }), " ", el("b", { className: "pp-next-n", textContent: String(R.NEXT_SECONDS) })));
     }
 
     /* =================================== FINAL =================================== */
@@ -873,6 +927,7 @@
       if (from !== hostId || !d) return;
       game.phase = "final";
       stop(game.autoNext);
+      stop(game.nextTimer);
       Object.assign(names, d.names || {});
       game.scores = d.scores || {};
       const rows = R.standings(game.scores, names);
@@ -921,6 +976,7 @@
     function onAgain(d, from) {
       if (from !== hostId) return;
       stop(host.phaseTimer);
+      stop(game.nextTimer);
       Object.assign(game, { phase: "lobby", round: 0, total: 0, players: [], drawings: {}, done: new Set(), order: [], voted: new Set(), scores: {} });
       host.tilesShown = null; // back to the lobby after a game: the code tiles flip over again
       showLobby();
@@ -962,6 +1018,7 @@
     ctx.on("pick", onPick);
     ctx.on("voted", onVoted);
     ctx.on("results", onResults);
+    ctx.on("next", onNext);
     ctx.on("final", onFinal);
     ctx.on("again", onAgain);
     ctx.on("sync", onSync);

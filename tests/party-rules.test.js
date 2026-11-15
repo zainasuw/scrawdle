@@ -166,3 +166,32 @@ test("compounds in words.json (joined by a non-breaking space) are never split i
   assert.equal(R.plainWord(`a dinosaur eating ice${NBSP}cream`), "a dinosaur eating ice cream");
   assert.equal(R.rowWidth([`ice${NBSP}cream`]), R.rowWidth(["ice", "cream"])); // a compound is as wide as its two words
 });
+
+test("after the scores the show moves on by itself: another round, then the podium after the last one", () => {
+  assert.equal(R.NEXT_SECONDS, 8);
+  assert.equal(R.afterScores(1, 3), "round");
+  assert.equal(R.afterScores(2, 3), "round");
+  assert.equal(R.afterScores(3, 3), "final");
+  assert.equal(R.afterScores(5, 3), "final", "never a round past the total");
+  assert.equal(R.nextCall("round"), "Next round in");
+  assert.equal(R.nextCall("final"), "Winner revealed in");
+});
+
+test("the countdown shows whole seconds, counts 8 to 1 and acts at 0, never below", () => {
+  const start = 1_000_000, ends = start + R.NEXT_SECONDS * 1000;
+  assert.equal(R.secondsLeft(ends, start), 8);
+  assert.equal(R.secondsLeft(ends, start + 1), 8, "a part second still shows the whole one");
+  assert.equal(R.secondsLeft(ends, start + 7001), 1);
+  assert.equal(R.secondsLeft(ends, ends), 0);
+  assert.equal(R.secondsLeft(ends, ends + 5000), 0);
+  const shown = [];
+  for (let t = start; t <= ends; t += 250) { const s = R.secondsLeft(ends, t); if (shown.at(-1) !== s) shown.push(s); }
+  assert.deepEqual(shown, [8, 7, 6, 5, 4, 3, 2, 1, 0]);
+});
+
+test("a countdown message from the host is kept sane: whole seconds from 1 to 30, else the default", () => {
+  assert.equal(R.cleanNextSeconds(8), 8);
+  assert.equal(R.cleanNextSeconds(5.4), 5);
+  assert.equal(R.cleanNextSeconds("6"), 6);
+  for (const bad of [0, -3, 31, 1e9, NaN, null, undefined, "soon", {}]) assert.equal(R.cleanNextSeconds(bad), R.NEXT_SECONDS, String(bad));
+});

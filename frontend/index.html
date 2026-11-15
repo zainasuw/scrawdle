@@ -56,9 +56,9 @@
     </ol>
     </div>
     <h3>On your own</h3>
-    <p><strong>Daily Word</strong> is one word a day, the same for everyone. Draw it, then publish it to today's gallery, where people like their favourites and the leaderboard ranks them.</p>
+    <p><strong>Daily Word</strong> is one word a day, the same for everyone.<span class="help-online"> Draw it, then publish it to today's gallery, where people like their favourites and the leaderboard ranks them.</span></p>
     <p><strong>Quick draw</strong> rolls a random word whenever you like.</p>
-    <p class="help-small">Your drawing saves in this browser as you go. Undo is Ctrl+Z (Cmd+Z on a Mac). Today's drawings leave the gallery at midnight.</p>
+    <p class="help-small">Your drawing saves in this browser as you go. Undo is Ctrl+Z (Cmd+Z on a Mac).<span class="help-online"> Today's drawings leave the gallery at midnight.</span></p>
   </dialog>
 
   <!-- A yes/no question in the game's own box, only for what can't be undone (Discard, Delete, Kick): never the browser's grey confirm. -->
@@ -727,7 +727,7 @@
       $("join-form").hidden = true;
       $("offline-note").hidden = false;
       setupEl.classList.add("offline");
-      help.querySelector(".help-party").hidden = true;
+      help.querySelectorAll(".help-party, .help-online").forEach((part) => { part.hidden = true; }); // the gallery and leaderboard are online too
     }
     // Quick draw on the stage: the cream die resting on its lit table (dice.js), waiting to be rolled.
     if (window.ScrawdleDice && typeof ScrawdleDice.show === "function") {

@@ -180,7 +180,7 @@
     back.href = "../";
     header.append(back);
     const heading = el("div", "gallery-heading");
-    heading.append(el("h1", "", "Today's leaderboard"));
+    heading.append(el("h1", "", "Today\u2019s leaderboard"));
     const note = el("p", "gallery-note loading", "Loading today\u2019s drawings"); // the words at once, a small ring after a second (flow.css)
     note.setAttribute("role", "status");
     const body = el("div", "lb-body");

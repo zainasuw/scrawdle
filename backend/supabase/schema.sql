@@ -51,6 +51,7 @@ create policy "public can publish a drawing for today"
 
 -- Storage RLS: anon may upload into the "drawings" bucket, but not overwrite or delete.
 -- Uncomment once the bucket exists. Run in the SQL editor, not inside this file automatically.
+drop policy if exists "public can upload drawings" on storage.objects;
 create policy "public can upload drawings"
    on storage.objects for insert
    to anon
@@ -204,18 +205,18 @@ $$;
 grant execute on function public.top_drawings(date, text[], int) to anon;
 
 
--- Lobbies: private rooms joined by a 5-letter code (https://scrawdle.vercel.app/?ABCDE).
+-- Lobbies: private rooms joined by a 4-letter code (https://scrawdle.vercel.app/?ABCDE).
 -- The table only records that a code exists, so a mistyped code can be told apart from a real
 -- lobby. RLS is on with NO policies, so the public key can't read or write the table directly
 -- (otherwise anyone could list every lobby code). Visitors go through the two functions below.
 create table if not exists public.lobbies (
-  code text primary key check (code ~ '^[A-Z]{5}$'),
+  code text primary key check (code ~ '^[A-Z]{4,5}$'), -- new codes are 4 letters; 5-letter ones from before still count
   created_at timestamptz not null default now()
 );
 alter table public.lobbies enable row level security;
 
 -- Makes a new lobby and returns its code. Codes use 20 consonants only, so a random code almost
--- never spells a word (nobody gets a rude lobby code). 20^5 = 3.2 million codes.
+-- never spells a word (nobody gets a rude lobby code). 20^4 = 160,000 codes, and old ones are cleared daily.
 -- security definer = runs as the table's owner, which is why it can write to a table the public
 -- key can't touch; the empty search_path is what the Supabase docs require when you do that.
 create or replace function public.create_lobby()
@@ -231,7 +232,7 @@ declare
 begin
   loop
     new_code := '';
-    for i in 1..5 loop
+    for i in 1..4 loop
       new_code := new_code || substr(letters, 1 + floor(random() * length(letters))::int, 1);
     end loop;
     begin

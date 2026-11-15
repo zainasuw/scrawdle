@@ -61,15 +61,15 @@ It's a static site: deploy the `frontend` folder to any static host. `vercel.jso
 - `backend/supabase/`: the database schema and the daily cleanup function.
 - `tests/`: unit tests for the game logic.
 
-## Credits
+## About
 
-Scrawdle began as a TCSS 490 team project at the University of Washington. This repository is Zainab Stanikzy's own continuation and redesign of it:
+Scrawdle is designed and built by Zainab Stanikzy:
 
-- Turned it into a same-room party game: a TV host screen, joining by room code on phones, rounds, anonymous voting, points, a scoreboard and a winner podium.
-- Replaced the animal-parts prompts with one word picked by an animated 3D dice roll, from an original list of 252 kid-friendly words.
-- Added Daily Word and Quick draw for solo play.
-- Redesigned every screen as a TV game show, with phones as contestant buzzer pads.
-- Made phones play on one screen with no scrolling, with 44px touch targets and readable contrast throughout.
-- Reviewed the design with the Impeccable design skill and recorded the design system in `DESIGN.md`.
+- A same-room party game: a TV host screen, joining by room code on phones, rounds, anonymous voting, points, a scoreboard and a winner podium.
+- One word to draw, picked by an animated 3D dice roll from an original list of 252 kid-friendly words.
+- Daily Word and Quick draw for solo play.
+- Every screen designed as a TV game show, with phones as contestant buzzer pads.
+- Phones play on one screen with no scrolling, with 44px touch targets and readable contrast throughout.
+- The design system is documented in `DESIGN.md`.
 
 Fonts: Shrikhand, Big Shoulders Display and Bricolage Grotesque, all under the SIL Open Font License.

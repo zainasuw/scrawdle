@@ -45,6 +45,7 @@
     <button class="close" type="button" aria-label="Close" title="Close"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2 id="help-title">How to play</h2>
     <p class="help-lead">Roll the die, get a word, draw it. That's Scrawdle.</p>
+    <div class="help-party">
     <h3>A party, in the same room</h3>
     <ol>
       <li>On a TV or laptop, press <strong>Host a game</strong>. It shows a short code of letters.</li>
@@ -53,6 +54,7 @@
       <li>The drawings show on the big screen with no names. Tap your favourite on your phone (not your own).</li>
       <li>Each vote is 100 points, and the round's top drawing gets 50 more. After the last round, the winner takes the top spot.</li>
     </ol>
+    </div>
     <h3>On your own</h3>
     <p><strong>Daily Word</strong> is one word a day, the same for everyone. Draw it, then publish it to today's gallery, where people like their favourites and the leaderboard ranks them.</p>
     <p><strong>Quick draw</strong> rolls a random word whenever you like.</p>
@@ -78,7 +80,9 @@
   </dialog>
 
   <!-- Home: the show's title card. The Scrawdle! logo; the one gold buzzer, Host a game; Join a game with the code
-       of letters; then the two ways to play alone (Daily Word, its word hidden on flip tiles, and Quick draw) and the links. -->
+       of letters; then the two ways to play alone (Daily Word, its word hidden on flip tiles, and Quick draw) and the links.
+       On a laptop or TV (1000px and wider) the same pieces stand on the stage (screens.css): Daily Word is the marquee
+       board, Quick draw is the die on its lit table, Host a game is the gold buzzer on the floor, Join is one line. -->
   <main id="setup">
     <header class="home-top">
       <h1 class="home-logo"><span class="logo-mark">Scrawdle</span></h1>
@@ -107,7 +111,7 @@
         <svg class="host-go" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M7 16h17M17 8.5l7.5 7.5-7.5 7.5"/></svg>
       </button>
       <form class="join-panel" id="join-form" autocomplete="off" novalidate>
-        <label for="join-code" class="join-label">Join a game</label>
+        <label for="join-code" class="join-label"><span class="join-label-full">Join a game</span><span class="join-label-short">Got a code?</span></label>
         <div class="join-row">
           <input id="join-code" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="5" pattern="[A-Za-z]{4,5}" placeholder="CODE" aria-describedby="join-help">
           <button class="join-btn" type="submit">Join</button>
@@ -115,23 +119,34 @@
         <p id="join-help" class="join-help" role="status">The letters on the big screen.</p>
       </form>
       <div id="multiplayer-error"></div>
+      <p class="offline-note" id="offline-note" hidden>Party games need the online version.</p>
     </section>
 
     <section class="home-solo" aria-label="Play on your own">
       <!-- Today's word stays hidden on blank flip tiles until it's rolled; once today's drawing is done, the word shows. -->
       <button class="daily-card" id="mode-daily" type="button">
-        <span class="daily-tiles" aria-hidden="true"><i>?</i><i>?</i><i>?</i></span>
+        <span class="daily-board">
+          <svg class="marquee-bulbs" aria-hidden="true" focusable="false"><rect class="bulbs-dim" width="100%" height="100%" rx="14" pathLength="240"/><rect class="bulbs-halo" width="100%" height="100%" rx="14" pathLength="240"/><rect class="bulbs-lit" width="100%" height="100%" rx="14" pathLength="240"/><rect class="bulbs-core" width="100%" height="100%" rx="14" pathLength="240"/></svg>
+          <span class="daily-tiles" id="daily-tiles" aria-hidden="true"><i>?</i><i>?</i><i>?</i><i>?</i><i>?</i><i>?</i></span>
+          <span class="daily-caption" id="daily-caption">Today's word</span>
+        </span>
         <span class="menu-name">Daily Word</span>
         <span class="menu-text" id="daily-text">Roll today's word</span>
+        <span class="stage-key daily-key" id="daily-key">Roll today's word</span>
       </button>
       <button class="quick-card" id="free-play" type="button">
+        <span class="quick-stage" id="quick-stage" aria-hidden="true"></span>
         <svg class="quick-die" viewBox="0 0 48 48" aria-hidden="true"><g transform="rotate(-10 24 24)"><rect x="7" y="7" width="34" height="34" rx="10" fill="#FFF4DE" stroke="#1B1240" stroke-width="3"/><path d="M12 36.5c4 2 20 2 24 0" stroke="#E6C084" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="#1B1240"><circle cx="16.5" cy="16.5" r="3.3"/><circle cx="24" cy="24" r="3.3"/><circle cx="31.5" cy="31.5" r="3.3"/></g></g></svg>
         <span class="menu-name">Quick draw</span>
         <span class="menu-text">A random word, any time</span>
+        <span class="stage-key quick-key">Quick draw: roll a random word</span>
       </button>
-      <p class="home-streak" id="home-streak" hidden></p>
-      <p class="home-next" id="home-next" hidden></p>
-      <p id="setup-error" role="alert" hidden></p>
+      <div class="home-status">
+        <p class="home-date" id="home-date"></p>
+        <p class="home-streak" id="home-streak" hidden></p>
+        <p class="home-next" id="home-next" hidden></p>
+        <p id="setup-error" role="alert" hidden></p>
+      </div>
     </section>
 
     <nav class="home-links" aria-label="Pages">
@@ -506,11 +521,29 @@
       $("mode-daily").classList.toggle("is-done", done);
       $("daily-text").textContent = done ? `You drew ${W.wordOf(t.prompts)}` : `Roll the word for ${new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`;
       $("mode-daily").setAttribute("aria-label", done ? `Daily Word, done: ${W.wordOf(t.prompts)}. Open your drawing` : "Daily Word: roll today's word");
+      // The stage (laptops and TVs): blank tiles on the marquee until today's word is drawn, then the word itself.
+      showDailyTiles(done ? W.wordOf(t.prompts) : "");
+      $("daily-caption").textContent = done ? "You drew today's word" : "Today's word";
+      $("daily-key").textContent = done ? "See your drawing" : "Roll today's word";
+      $("home-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
       showNextWord();
       // The streak of days in a row with a finished daily drawing (streak.js). Hidden until there is one.
       const streakText = window.ScrawdleStreak ? ScrawdleStreak.homeText(ScrawdleStreak.read(ScrawdleDrawing.dayKey())) : "";
       $("home-streak").textContent = streakText;
       $("home-streak").hidden = !streakText;
+    }
+
+    // The marquee's tiles on the stage: six blank "?" tiles, or the word once it's drawn (a space is a gap between
+    // words). Phones show three blank tiles, and none once the word is done (screens.css).
+    function showDailyTiles(word) {
+      const box = $("daily-tiles");
+      const chars = word ? [...word.replace(/\u00a0/g, " ").trim()] : [..."??????"];
+      box.replaceChildren(...chars.map((ch) => {
+        const t = document.createElement(ch === " " ? "b" : "i");
+        if (ch !== " ") t.textContent = ch;
+        return t;
+      }));
+      box.style.setProperty("--n", String(chars.length));
     }
 
     // A tab left open on home past midnight: when it's looked at again on a new day, home is rebuilt for today.
@@ -683,7 +716,19 @@
       const err = lobbyCard.querySelector(".lobby-error");
       if (err) $("multiplayer-error").append(err);
       $("multiplayer").addEventListener("click", () => { const create = lobbyCard.querySelector('[data-act="create"]'); if (create) create.click(); });
-    } else $("multiplayer").hidden = true;
+    } else {
+      // No online play (supabase-config.js is empty): no Host, no Join (a code could never work), and the help leaves
+      // out the party. One line says why, and Daily Word becomes the main action.
+      $("multiplayer").hidden = true;
+      $("join-form").hidden = true;
+      $("offline-note").hidden = false;
+      setupEl.classList.add("offline");
+      help.querySelector(".help-party").hidden = true;
+    }
+    // Quick draw on the stage: the cream die resting on its lit table (dice.js), waiting to be rolled.
+    if (window.ScrawdleDice && typeof ScrawdleDice.show === "function") {
+      try { ScrawdleDice.show($("quick-stage"), "silly"); $("free-play").classList.add("has-die"); } catch (err) { /* the small die picture stays */ }
+    }
     const finish = ScrawdleDrawing.createFinishScreen(board, gallery, {
       onHome: () => { leaveOk = true; goHome(); }, // finished, so no "Leave your drawing?"
       onPlayAgain: playAgain,

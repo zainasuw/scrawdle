@@ -6,11 +6,11 @@
  * Older stylesheets sit in the "legacy" layer (index.html); each screen root is reset first, then drawn here. */
 
 /* ---------- A clean slate for every screen and dialog drawn here ---------- */
-#setup, #setup :where(*:not(svg *)), #slot, #slot :where(*:not(svg *, .dice, .dice *)),
+#setup, #setup :where(*:not(svg *, .dice, .dice *)), #slot, #slot :where(*:not(svg *, .dice, .dice *)),
 #finish, #finish :where(*:not(svg *)), #sketchbook, #sketchbook :where(*:not(svg *)), dialog#gallery, dialog#gallery :where(*:not(svg *)),
 #help, #help :where(*:not(svg *)), .ask-box, .ask-box :where(*:not(svg *)), #leave-drawing, #leave-drawing :where(*:not(svg *)),
 .toast, .toast :where(*) { all: revert; }
-#setup *::before, #setup *::after, #slot *:not(.dice, .dice *)::before, #slot *:not(.dice, .dice *)::after,
+#setup *:not(.dice, .dice *)::before, #setup *:not(.dice, .dice *)::after, #slot *:not(.dice, .dice *)::before, #slot *:not(.dice, .dice *)::after,
 #finish *::before, #finish *::after, #sketchbook *::before, #sketchbook *::after, dialog#gallery *::before, dialog#gallery *::after,
 #help *::before, #help *::after, .ask-box *::before, .ask-box *::after, #leave-drawing *::before, #leave-drawing *::after { all: revert; }
 #setup, #setup *, #slot, #slot *, #finish, #finish *, #sketchbook, #sketchbook *, dialog#gallery, dialog#gallery *,
@@ -275,6 +275,14 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
 #setup .home-streak { color: var(--bulb); }
 #setup #setup-error { color: #FFB3B3; }
 
+/* The stage's own pieces (the marquee frame and caption, the die, the keys under them, the date) are drawn only at
+   1000px and wider; on a phone the cards keep their own look, with three blank tiles. */
+#setup :is(.daily-board, .home-status) { display: contents; }
+#setup :is(.marquee-bulbs, .daily-caption, .stage-key, .quick-stage, .join-label-short, .home-date) { display: none; }
+#setup .daily-tiles :is(i:nth-child(n+4), b) { display: none; }
+/* No online play: one line where Join would be */
+#setup .offline-note { margin: 0; padding: 2px 8px; text-align: center; font: 600 15px/1.35 var(--font-ui); color: var(--text-2); text-wrap: balance; }
+
 /* The links: small violet keys */
 #setup .link-chip {
   display: inline-flex; align-items: center; gap: 8px;
@@ -307,9 +315,9 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   #setup .logo-mark { font-size: 40px; }
 }
 
-/* Laptops and TVs: the title card. The marquee sign across the top; the party on the left, big; playing alone on
-   the right. */
-@media (min-width: 760px) {
+/* Tablets and narrow windows: the title card. The marquee sign across the top; the party on the left, big; playing
+   alone on the right. (From 1000px it becomes the stage, below.) */
+@media (min-width: 760px) and (max-width: 999px) {
   #setup {
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     grid-template-areas: "top top" "tag tag" "party solo" "links links" "foot foot";
@@ -355,17 +363,282 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   #setup .logo-mark { font-size: 46px; }
   #setup .host-name { font-size: 32px; }
 }
-@media (min-width: 1600px) {
-  #setup { max-width: 1560px; column-gap: 44px; }
-  #setup .logo-mark { font-size: 112px; }
-  #setup .host-name { font-size: 66px; }
-  #setup .host-art { width: 160px; height: 120px; }
-  #setup .host-sub, #setup .join-help, #setup .home-tag, #setup .link-chip, #setup :is(.daily-card, .quick-card) .menu-text, #setup .home-foot { font-size: 20px; }
-  #setup .join-label { font-size: 26px; }
-  #setup .daily-card .menu-name { font-size: 40px; }
-  #setup .quick-card .menu-name { font-size: 32px; }
-  #setup .link-chip svg { width: 24px; height: 24px; }
+
+/* =====================================================================================================================
+   HOME ON A LAPTOP OR TV (1000px and wider): the stage. One picture that fills the screen and never scrolls, sized in
+   --u like the party TV (1/100 of a 16:9 screen's width: 19.2px at 1920 x 1080). The show's top strip (logo,
+   tagline, help and the links); Daily Word is the marquee board on the right, its word waiting on blank cream tiles;
+   Quick draw is the cream die on its lit table on the left, under a spotlight; Host a game is the gold buzzer on the
+   floor, centred under the split, with Join as one quiet line beside it. The lighting is the TV's (social.css .pp-tv):
+   coloured beams from the top corners, the fluted back wall, a glossy floor with a warm pool of light.
+   ===================================================================================================================== */
+@media (min-width: 1000px) {
+  #setup {
+    --u: min(1vw, calc(100dvh / 56.25));
+    --die-col: calc(var(--u) * 33);       /* Quick draw's column; the board takes the rest */
+    --col-gap: calc(var(--u) * 3);
+    --tile-h: calc(var(--u) * 7);         /* a blank tile on the board */
+    --die: calc(var(--u) * 14);
+    --host-w: calc(var(--u) * 36);
+    --host-h: calc(var(--u) * 9);
+    --host-name: calc(var(--u) * 3.4);
+    --board-h: calc(var(--u) * 22);
+    --key-h: max(44px, calc(var(--u) * 3.4));
+    --small: max(14px, calc(var(--u) * 1.1));
+    --screen: radial-gradient(ellipse at 50% 0%, #1E1652, #0D0A2A 75%);
+    position: relative; isolation: isolate;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: none;
+    align-items: center; align-content: stretch;
+    column-gap: calc(var(--u) * 1.6); row-gap: calc(var(--u) * 1.2);
+    width: 100%; max-width: none; min-height: 100dvh; margin: 0;
+    padding: calc(var(--u) * 1.8) calc(var(--u) * 3.4) calc(var(--u) * 1.8);
+    font-size: calc(var(--u) * 1.15);
+    background:
+      radial-gradient(ellipse 55% 50% at 60% 38%, rgb(120 70 200 / .3), transparent 70%),
+      radial-gradient(ellipse 34% 9% at 50% 84%, rgb(255 214 140 / .16), transparent 72%),
+      radial-gradient(ellipse 58% 20% at 50% 86%, rgb(255 170 90 / .14), rgb(242 53 138 / .05) 55%, transparent 80%),
+      radial-gradient(ellipse 14% 26% at 14% 90%, rgb(200 170 255 / .09), transparent 70%),
+      radial-gradient(ellipse 14% 26% at 86% 90%, rgb(242 53 138 / .1), transparent 70%),
+      linear-gradient(180deg, transparent 0 69%, rgb(255 236 200 / .05) 72.5%, transparent 76%),
+      linear-gradient(180deg, transparent 0 68%, #1B1350 73%, #150F40 84%, #09071F 100%),
+      repeating-linear-gradient(90deg, rgb(255 255 255 / .03) 0 2px, transparent 2px 46px, rgb(0 0 0 / .16) 46px 60px, transparent 60px 64px),
+      var(--bg-stage);
+    background-color: var(--night);
+  }
+  /* the stage lights: lilac from the top left, magenta from the top right, a faint teal crossing them (gradients on a
+     layer behind the set; home holds no canvas) */
+  #setup::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      conic-gradient(from 128deg at -2% -4%, transparent 0deg, rgb(214 196 255 / .1) 6deg, rgb(214 196 255 / .16) 10deg, rgb(214 196 255 / .1) 14deg, transparent 21deg),
+      conic-gradient(from 197deg at 102% -4%, transparent 0deg, rgb(242 53 138 / .1) 6deg, rgb(242 53 138 / .17) 11deg, rgb(242 53 138 / .1) 16deg, transparent 23deg),
+      conic-gradient(from 214deg at 88% -6%, transparent 0deg, rgb(30 211 194 / .07) 4deg, rgb(30 211 194 / .1) 7deg, transparent 12deg);
+    -webkit-mask-image: linear-gradient(180deg, #000 0, rgb(0 0 0 / .7) 45%, transparent 78%);
+    mask-image: linear-gradient(180deg, #000 0, rgb(0 0 0 / .7) 45%, transparent 78%);
+  }
+
+  /* ---- The top strip: the logo and tagline on the left, the links and help on the right ---- */
+  #setup .home-top { display: contents; }
+  #setup .home-top::before { content: none; }
+  #setup .home-logo { grid-row: 1; grid-column: 1; }
+  #setup .logo-mark {
+    font-size: calc(var(--u) * 3.6); padding: 0 calc(var(--u) * .3) calc(var(--u) * .5);
+    text-shadow: 0 .04em 0 #C2541D, 0 .08em 0 #7A1F4E, 0 .14em .25em rgb(0 0 0 / .5);
+  }
+  #setup .logo-mark::after { text-shadow: 0 .04em 0 #8E1650, 0 .08em 0 #4A0E36; }
+  #setup .home-tag {
+    grid-row: 1; grid-column: 2; max-width: 16em; margin: 0;
+    text-align: left; font: 600 calc(var(--u) * 1.3)/1.25 var(--font-ui); color: var(--text-2);
+  }
+  #setup .home-links { grid-row: 1; grid-column: 4; flex-wrap: nowrap; gap: calc(var(--u) * .7); }
+  #setup .link-chip {
+    min-height: max(44px, calc(var(--u) * 2.8)); padding: 0 calc(var(--u) * 1.1) 0 calc(var(--u) * .8); gap: calc(var(--u) * .5);
+    font-size: var(--small); white-space: nowrap;
+  }
+  #setup .link-chip svg { width: calc(var(--u) * 1.3); height: calc(var(--u) * 1.3); color: var(--text-2); } /* gold is the one main action */
+  #setup .home-keys { grid-row: 1; grid-column: 5; position: static; align-self: center; }
+  #setup .home-keys .icon-key { width: max(44px, calc(var(--u) * 2.8)); height: max(44px, calc(var(--u) * 2.8)); }
+  #setup .home-keys .icon-key svg { width: calc(var(--u) * 1.5); height: calc(var(--u) * 1.5); }
+
+  /* ---- The set: Quick draw (the die) on the left, Daily Word (the board) on the right, their keys on one line ---- */
+  #setup .home-solo {
+    grid-row: 2; grid-column: 1 / -1; align-self: center;
+    grid-template-columns: var(--die-col) minmax(0, 1fr); grid-template-rows: auto;
+    column-gap: var(--col-gap); row-gap: 0; align-items: end;
+  }
+  #setup :is(.daily-card, .quick-card) {
+    min-height: 0; padding: 0; gap: calc(var(--u) * 1.3);
+    background: none; box-shadow: none; border-radius: calc(var(--u) * 1.9);
+  }
+  #setup :is(.daily-card, .quick-card):hover, #setup :is(.daily-card, .quick-card):active { transform: none; box-shadow: none; }
+  #setup :is(.daily-card, .quick-card) :is(.menu-name, .menu-text) { display: none; }
+  #setup :is(.daily-card, .quick-card):focus-visible { outline-offset: calc(var(--u) * .6); border-radius: calc(var(--u) * 1.9); }
+
+  /* the keys under the set pieces: violet, standing on their base, pressed in with the piece */
+  #setup .stage-key {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: var(--key-h); padding: 0 calc(var(--u) * 1.6);
+    border-radius: calc(var(--u) * .95);
+    background: var(--key); color: var(--text);
+    font: 800 max(15px, calc(var(--u) * 1.2))/1.1 var(--font-ui); white-space: nowrap;
+    box-shadow: 0 calc(var(--u) * .26) 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2);
+    transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out), background-color var(--fast) var(--ease-out);
+  }
+  #setup :is(.daily-card, .quick-card):hover .stage-key { background: var(--key-hover); }
+  #setup :is(.daily-card, .quick-card):active .stage-key { transform: translateY(calc(var(--u) * .22)); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+
+  /* Quick draw: the die resting on its table, under one spotlight beam */
+  #setup .quick-card { grid-row: 1; grid-column: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+  #setup .quick-card::before {
+    content: ""; position: absolute; z-index: 0; pointer-events: none;
+    left: 4%; right: 4%; top: calc(var(--u) * -10); bottom: calc(var(--key-h) + var(--u) * 4.2);
+    background: linear-gradient(180deg, rgb(255 236 190 / .17), rgb(255 236 190 / .05) 70%, transparent);
+    clip-path: polygon(41% 0, 59% 0, 100% 100%, 0 100%);
+  }
+  #setup .quick-stage { display: block; position: relative; z-index: 1; --dice-size: var(--die); }
+  #setup .quick-stage .dice-burst { display: none; }
+  #setup .quick-stage .dice-hop { animation: die-idle 4.8s ease-in-out infinite; }
+  #setup .quick-card:hover .quick-stage .dice-hop { animation: die-lift 420ms var(--ease-out) both; }
+  #setup .quick-card .quick-die { display: none; }
+  #setup .quick-card:not(.has-die) .quick-stage { display: none; }
+  #setup .quick-card:not(.has-die) .quick-die { display: block; width: calc(var(--u) * 12); height: calc(var(--u) * 12); margin: 0 0 calc(var(--u) * 2); }
+  #setup .quick-key { position: relative; z-index: 1; }
+
+  /* Daily Word: the marquee board. A violet frame ringed with bulbs (the chase runs here only), a dark lit screen,
+     blank cream tiles, and a caption under them; the key and today's date sit under the board. */
+  #setup .daily-card { grid-row: 1; grid-column: 2; display: grid; justify-items: start; align-content: end; }
+  #setup .daily-board {
+    --frame: calc(var(--u) * 2.1);
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 1.6);
+    width: 100%; min-height: var(--board-h); padding: calc(var(--frame) + var(--u) * 2) calc(var(--frame) + var(--u) * 2.4);
+    border-radius: calc(var(--u) * 1.9);
+    background: linear-gradient(180deg, #3B238A, #24165E);
+    box-shadow: 0 0 0 calc(var(--u) * .3) #1A1048, 0 0 0 calc(var(--u) * .47) rgb(255 194 61 / .55), 0 calc(var(--u) * 1.6) calc(var(--u) * 4) rgb(0 0 0 / .55), 0 0 calc(var(--u) * 6) rgb(160 90 255 / .25);
+    container-type: inline-size;
+  }
+  #setup .daily-board::before {
+    content: ""; position: absolute; inset: var(--frame); z-index: 0; border-radius: calc(var(--u) * 1.1);
+    background: var(--screen); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .06), inset 0 calc(var(--u) * 1) calc(var(--u) * 3) rgb(0 0 0 / .6);
+  }
+  #setup .daily-board .marquee-bulbs {
+    display: block; position: absolute; z-index: 1; pointer-events: none;
+    inset: calc(var(--frame) / 2); width: calc(100% - var(--frame)); height: calc(100% - var(--frame));
+    fill: none; stroke-linecap: round;
+    --gap: 4; /* pathLength 240 / 4 = 60 bulbs round the board */
+  }
+  #setup .marquee-bulbs rect { rx: calc(var(--u) * .85); stroke-dasharray: 0 var(--gap); }
+  #setup .marquee-bulbs .bulbs-dim { stroke: #6655A8; stroke-width: calc(var(--u) * .7); }
+  #setup .marquee-bulbs .bulbs-halo { stroke: rgb(255 194 61 / .3); stroke-width: calc(var(--u) * 1.4); stroke-dasharray: 0 calc(var(--gap) * 2); animation: chase 3.2s linear infinite; }
+  #setup .marquee-bulbs .bulbs-lit { stroke: var(--gold); stroke-width: calc(var(--u) * .75); stroke-dasharray: 0 calc(var(--gap) * 2); animation: chase 3.2s linear infinite; }
+  #setup .marquee-bulbs .bulbs-core { stroke: #FFF7DA; stroke-width: calc(var(--u) * .3); stroke-dasharray: 0 calc(var(--gap) * 2); animation: chase 3.2s linear infinite; }
+  /* the tiles: as tall as --tile-h, narrower when the word (once drawn) is long */
+  #setup .daily-board .daily-tiles {
+    --tw: min(calc(var(--tile-h) / 1.3), calc(100cqi / (var(--n, 6) * 1.14)));
+    position: relative; z-index: 2; display: flex; gap: calc(var(--tw) * .12); margin: 0; padding: 0;
+  }
+  #setup .daily-board .daily-tiles :is(i:nth-child(n+1), b) { display: grid; }
+  #setup .daily-board .daily-tiles i {
+    width: var(--tw); height: calc(var(--tw) * 1.3); border-radius: calc(var(--tw) * .12);
+    font-size: calc(var(--tw) * 1.05); text-transform: uppercase;
+    box-shadow: 0 calc(var(--tw) * .07) 0 #B9945A, 0 calc(var(--tw) * .12) calc(var(--tw) * .2) rgb(0 0 0 / .45), inset 0 1px 0 #fff;
+  }
+  #setup .daily-board .daily-tiles b { width: calc(var(--tw) * .3); }
+  #setup .daily-card:hover .daily-tiles i:nth-child(4) { transition-delay: 150ms; }
+  #setup .daily-card:hover .daily-tiles i:nth-child(5) { transition-delay: 200ms; }
+  #setup .daily-card:hover .daily-tiles i:nth-child(6) { transition-delay: 250ms; }
+  #setup .daily-caption { display: block; position: relative; z-index: 2; font: 600 calc(var(--u) * 1.3)/1.2 var(--font-ui); color: var(--text-2); }
+  /* done for today: the word itself on the tiles, a teal tick on the board */
+  #setup .daily-card.is-done .daily-board .daily-tiles { display: flex; }
+  #setup .daily-card.is-done .daily-caption { color: var(--bulb); font-weight: 700; }
+  #setup .daily-card.is-done::before {
+    z-index: 3; top: calc(var(--u) * 3); left: calc(var(--u) * 3); width: calc(var(--u) * 3); height: calc(var(--u) * 3);
+    background-size: calc(var(--u) * 2);
+  }
+  /* the date, the streak, or when the next word comes: on the key's line, at the board's right edge */
+  #setup .home-status {
+    grid-row: 1; grid-column: 2; align-self: end; justify-self: end; z-index: 1;
+    display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: calc(var(--u) * .15);
+    min-height: var(--key-h); pointer-events: none;
+  }
+  #setup .home-status p { margin: 0; font: 600 var(--small)/1.25 var(--font-ui); text-align: right; }
+  #setup .home-date { display: block; color: var(--text); }
+  #setup .home-streak { color: var(--bulb); }
+  #setup .home-next { color: var(--text-2); }
+  #setup #setup-error { pointer-events: auto; }
+  #setup .daily-card.is-done ~ .home-status .home-date { display: none; } /* "New word in ..." says it instead */
+
+  /* ---- The floor: the gold Host buzzer, centred under the split between the die and the board, Join beside it ---- */
+  #setup .home-party {
+    grid-row: 3; grid-column: 1 / -1; position: relative;
+    grid-template-columns: calc(var(--die-col) + var(--col-gap) / 2 - var(--host-w) / 2) var(--host-w) minmax(0, 1fr);
+    grid-template-rows: auto auto; column-gap: 0; row-gap: calc(var(--u) * .6); align-items: center; align-content: center;
+  }
+  /* a warm pool of light on the floor under the buzzer */
+  #setup .home-party::before {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: calc(var(--die-col) + var(--col-gap) / 2 - var(--host-w) * .85); width: calc(var(--host-w) * 1.7);
+    top: -20%; bottom: calc(var(--u) * -1.8); /* down to the bottom of the screen, never past it (no scroll) */
+    background: radial-gradient(ellipse 50% 46% at 50% 78%, rgb(255 194 61 / .2), rgb(255 150 60 / .08) 55%, transparent);
+  }
+  #setup .host-buzzer {
+    grid-column: 2; grid-row: 1 / span 2;
+    grid-template-columns: auto minmax(0, 1fr); gap: calc(var(--u) * 1.3);
+    width: 100%; min-height: var(--host-h); padding: calc(var(--u) * .8) calc(var(--u) * 1.8) calc(var(--u) * 1) calc(var(--u) * 1.3);
+    border-width: calc(var(--u) * .4); border-radius: calc(var(--u) * 1.9);
+    box-shadow: 0 calc(var(--u) * .5) 0 var(--buzzer-base), 0 calc(var(--u) * 1.2) calc(var(--u) * 2.2) rgb(0 0 0 / .5), inset 0 calc(var(--u) * -.4) calc(var(--u) * .6) rgb(150 80 0 / .28);
+  }
+  #setup .host-buzzer::after { left: calc(var(--u) * 2); top: calc(var(--u) * .35); width: 26%; height: calc(var(--u) * .55); }
+  #setup .host-buzzer:active { transform: translateY(calc(var(--u) * .4)); box-shadow: 0 calc(var(--u) * .1) 0 var(--buzzer-base), 0 calc(var(--u) * .6) calc(var(--u) * 1.2) rgb(0 0 0 / .45), inset 0 calc(var(--u) * -.2) calc(var(--u) * .6) rgb(150 80 0 / .28); }
+  #setup .host-art { width: calc(var(--host-h) * .89); height: calc(var(--host-h) * .67); }
+  #setup .host-text { gap: calc(var(--u) * .25); }
+  #setup .host-name { font-size: var(--host-name); }
+  #setup .host-sub { font-size: var(--small); max-width: 24em; }
+  #setup .host-go { display: none; } /* the whole buzzer is the button */
+
+  /* Join a game: one quiet line. "Got a code?", the code slot, the teal Join key. The hint shows only with a bad code. */
+  #setup .join-panel {
+    grid-column: 3; grid-row: 1; justify-self: start; margin-left: calc(var(--u) * 2.4);
+    grid-template-columns: auto auto; align-items: center; column-gap: calc(var(--u) * 1); row-gap: calc(var(--u) * .5);
+    padding: 0; border-radius: 0; background: none; box-shadow: none;
+  }
+  #setup .join-label { font: 700 calc(var(--u) * 1.3)/1.1 var(--font-ui); color: var(--text-2); white-space: nowrap; }
+  #setup .join-label-full { display: none; }
+  #setup .join-label-short { display: inline; }
+  #setup .join-row { gap: calc(var(--u) * .7); }
+  #setup #join-code {
+    flex: none; width: calc(var(--u) * 14); height: max(44px, calc(var(--u) * 3.2)); padding: 0 calc(var(--u) * .4);
+    border-radius: calc(var(--u) * .6); font-size: calc(var(--u) * 2.1);
+  }
+  #setup #join-code::placeholder { font-size: calc(var(--u) * 1.6); }
+  #setup .join-btn {
+    min-width: 0; height: max(44px, calc(var(--u) * 3.2)); padding: 0 calc(var(--u) * 1.4);
+    border-radius: calc(var(--u) * .73); font-size: max(15px, calc(var(--u) * 1.2));
+    box-shadow: 0 calc(var(--u) * .26) 0 #0E7F74, inset 0 2px 0 rgb(255 255 255 / .35);
+  }
+  #setup .join-panel:not(.bad) .join-help { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  #setup .join-panel.bad .join-help { grid-column: 1 / -1; font-size: var(--small); }
+  #setup #multiplayer-error { grid-column: 3; grid-row: 2; justify-self: start; margin-left: calc(var(--u) * 2.4); max-width: calc(var(--u) * 30); }
+  #setup .lobby-error { font-size: var(--small); }
+
+  /* ---- No online play: no buzzer and no Join. Daily Word's key is the gold one; one lilac line on the floor; the
+     die and the board take the room the buzzer had. ---- */
+  #setup.offline { --die: calc(var(--u) * 16); --tile-h: calc(var(--u) * 8); --board-h: calc(var(--u) * 27); }
+  /* the set and its line sit together in the middle of the room under the strip, with no empty floor between */
+  #setup.offline { grid-template-rows: auto minmax(0, 1fr) auto auto minmax(0, 1fr); }
+  #setup.offline .home-solo { grid-row: 3; }
+  #setup.offline .home-party { grid-row: 4; padding-top: calc(var(--u) * 1.4); }
+  #setup.offline .home-party { grid-template-columns: minmax(0, 1fr); }
+  #setup.offline .home-party::before { content: none; }
+  #setup .offline-note { grid-column: 1 / -1; font: 600 calc(var(--u) * 1.3)/1.3 var(--font-ui); }
+  #setup.offline .daily-key {
+    min-height: max(48px, calc(var(--u) * 4)); padding: 0 calc(var(--u) * 2.2);
+    border-radius: calc(var(--u) * .95);
+    background: linear-gradient(180deg, #FFD467, #FFB81F); color: var(--ink);
+    font-size: max(17px, calc(var(--u) * 1.5));
+    box-shadow: 0 calc(var(--u) * .32) 0 #9A5B12, 0 calc(var(--u) * .8) calc(var(--u) * 1.4) calc(var(--u) * -.3) rgb(0 0 0 / .6), inset 0 2px 0 rgb(255 255 255 / .55);
+  }
+  #setup.offline .daily-card:hover .daily-key { background: linear-gradient(180deg, #FFE08A, #FFC23D); }
+  #setup.offline .daily-card:active .daily-key { transform: translateY(calc(var(--u) * .28)); box-shadow: 0 calc(var(--u) * .05) 0 #9A5B12, inset 0 2px 0 rgb(255 255 255 / .45); }
+  #setup.offline .home-status { min-height: max(48px, calc(var(--u) * 4)); }
 }
+/* Short laptops (1366 x 768, 1280 x 720, and less once the browser's bars are in): smaller tiles, die and buzzer, so
+   the set breathes. Only when the screen is wide for its height (a 4:3 screen has the room), and only with the buzzer
+   on the floor (offline, the set has the floor's room). */
+@media (min-width: 1000px) and (max-height: 820px) and (min-aspect-ratio: 3/2) {
+  #setup:not(.offline) {
+    --tile-h: calc(var(--u) * 4.8);
+    --die: calc(var(--u) * 12);
+    --host-h: calc(var(--u) * 7);
+    --host-name: calc(var(--u) * 2.8);
+    --host-w: calc(var(--u) * 32);
+    --board-h: calc(var(--u) * 17);
+    --key-h: max(44px, calc(var(--u) * 3.1));
+  }
+}
+@keyframes die-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u, 10px) * -.6)); } }
+@keyframes die-lift { to { transform: translateY(calc(var(--u, 10px) * -1.4)) rotate(-7deg); } }
 
 /* =====================================================================================================================
    THE REVEAL: the die tumbles onto the lit stage table and lands on a category; the word flips onto cream tiles

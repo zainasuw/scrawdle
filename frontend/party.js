@@ -325,19 +325,21 @@
     }
     // The TV's word fills its marquee: for each row count (1 to 3, balanced), the biggest tile size (in --u) that fits
     // the board's screen, found by measuring; the row count with the biggest tiles wins (another row has to buy 8%).
-    // The rows are chosen once; a later resize only fits the size again.
+    // The rows are chosen and the tiles made once; a later resize only fits their size again, so the tiles that
+    // already flipped stay put (when drawing starts the clock grows and the board gives it room: the tiles shrink
+    // smoothly with it instead of being made again and flipping a second time).
     function fitTvWord(banner, word, startDelay) {
       const inner = banner.querySelector(".pp-banner-in"), holder = banner.querySelector(".pp-word");
       if (!inner || !holder || typeof ResizeObserver !== "function") return;
       let chosen = null;
+      const build = (rows) => { holder.replaceChildren(wordLetters(word, startDelay, rows)); return holder.firstChild; };
       const fit = () => {
         const cs = getComputedStyle(inner);
         const w = inner.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
         const h = inner.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
         if (w <= 0 || h <= 0) return;
-        const best = (rows) => {
-          holder.replaceChildren(wordLetters(word, startDelay, rows));
-          const text = holder.firstChild;
+        // the biggest tile size (in --u) at which these tiles fit the board's screen
+        const biggest = (text) => {
           const fits = (fs) => { banner.style.setProperty("--fs", String(fs)); return text.scrollWidth <= w + 1 && text.offsetHeight <= h * 0.94; };
           let lo = 2.5, hi = 9.5;
           if (fits(hi)) return hi;
@@ -348,12 +350,13 @@
           for (let k = 1; k <= 3; k++) {
             const rows = R.balancedRows(word, k);
             if (!rows) continue;
-            const fs = best(rows);
+            const fs = biggest(build(rows));
             if (!chosen || fs > chosen.fs * 1.08) chosen = { rows, fs };
           }
           if (!chosen) return;
+          build(chosen.rows);
         }
-        banner.style.setProperty("--fs", best(chosen.rows).toFixed(2));
+        banner.style.setProperty("--fs", biggest(holder.firstChild).toFixed(2));
       };
       new ResizeObserver(fit).observe(inner);
     }

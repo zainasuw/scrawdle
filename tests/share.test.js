@@ -1,0 +1,45 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { shareLine } = require("../frontend/drawing.js");
+
+const URL_ = "https://scrawdle.vercel.app/";
+const parts = [{ label: "Head", value: "Parrot", optional: false }, { label: "Tail", value: "Dinosaur tail", optional: false }];
+
+const word = [{ label: "Silly", value: "a pizza wearing sunglasses", optional: false }];
+
+test("a Daily Word drawing names the date and the word, and links to the game", () => {
+  const line = shareLine({ mode: "daily", daily: true, prompts: word, day: "2026-11-05" }, URL_);
+  assert.match(line, /^My Scrawdle Daily Word for .*5: a pizza wearing sunglasses\. Draw yours: https:\/\/scrawdle\.vercel\.app\/$/);
+});
+
+test("older animal-parts drawings still share, with their parts as the word", () => {
+  assert.match(shareLine({ mode: "daily", daily: true, prompts: parts, day: "2026-11-05" }, URL_), /: Parrot, Dinosaur tail\. Draw yours: /);
+  assert.match(shareLine({ mode: "detailed", daily: true, prompts: parts, day: "2026-11-05" }, URL_), /^My Scrawdle Daily Word for /);
+});
+
+test("Daily Free Play doesn't list its placeholder prompt", () => {
+  const line = shareLine({ mode: "scrawl", daily: true, prompts: [{ label: "Daily Free Play", value: "Draw anything" }], day: "2026-11-05" }, URL_);
+  assert.match(line, /^My Scrawdle Daily Doodle drawing for /);
+  assert.doesNotMatch(line, /Draw anything/);
+});
+
+test("Quick draw has no date, since it isn't a daily drawing", () => {
+  const line = shareLine({ mode: "basic", daily: false, prompts: word, day: "2026-11-05" }, URL_);
+  assert.equal(line, "My Scrawdle Quick draw: a pizza wearing sunglasses. Draw yours: " + URL_);
+});
+
+test("a daily drawing's line ends with the streak, Wordle-style, once it's 3 days or more", () => {
+  const day = { mode: "daily", daily: true, prompts: parts, day: "2026-11-05" };
+  assert.match(shareLine(day, URL_, 5), / Draw yours: https:\/\/scrawdle\.vercel\.app\/ · 5-day streak$/);
+  assert.match(shareLine({ ...day, mode: "scrawl" }, URL_, 3), / · 3-day streak$/);
+  assert.equal(shareLine({ ...day, mode: "scrawl" }, URL_, 2), shareLine({ ...day, mode: "scrawl" }, URL_), "2 days isn't shown yet");
+  assert.equal(shareLine(day, URL_, 0), shareLine(day, URL_), "no streak, nothing added");
+  assert.doesNotMatch(shareLine({ ...day, daily: false }, URL_, 5), /streak/, "Quick draw doesn't count toward a streak");
+  assert.doesNotMatch(shareLine(day, URL_, 5), /🔥/, "no emoji");
+});
+
+test("a Time Challenge says how long it was, and has no date or streak", () => {
+  const round = { mode: "basic", daily: false, prompts: parts, day: "2026-11-05", timed: { seconds: 60 } };
+  assert.equal(shareLine(round, URL_, 5), "My Scrawdle 60-second Time Challenge: Parrot, Dinosaur tail. Draw yours: " + URL_);
+});

@@ -1,0 +1,285 @@
+/* Scrawdle: the TV game show on the two pages of their own, Public drawings (/public-drawings/, gallery.js) and
+ * Today's leaderboard (/leaderboard/, leaderboard.js). The same night studio as the game: the stage light, a faint
+ * fluted back wall. Every drawing sits white in a dark bezel on a dark panel; a like is a heart key that turns magenta
+ * (applause) once you've liked it. The leaderboard is the show's scoreboard: the top three stand on lit podiums
+ * (#1 in the middle, tallest, crowned, in a gold spotlight), places 4 to 10 are scoreboard rows with their numbers on
+ * flip-board tiles. Tokens: stage.css. The older stylesheets are in the "legacy" layer (see each page's <head>);
+ * everything inside #page is first reset to the browser's own defaults. */
+
+/* ---------- A clean slate ---------- */
+#page, #page :where(*:not(svg *)), dialog.ask-box, dialog.ask-box :where(*), body > p, body > p :where(*) { all: revert; }
+#page *::before, #page *::after, dialog.ask-box *::before, dialog.ask-box *::after { all: revert; }
+#page, #page *, dialog.ask-box, dialog.ask-box * { box-sizing: border-box; }
+#page [hidden] { display: none !important; }
+#page svg { display: block; overflow: visible; }
+#page button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#page :focus-visible, dialog.ask-box :focus-visible, body > p :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 12px; }
+::selection { background: var(--gold); color: var(--ink); }
+
+/* ---------- The set ---------- */
+:root {
+  --wall: repeating-linear-gradient(90deg, rgb(255 255 255 / .03) 0 2px, transparent 2px 46px, rgb(0 0 0 / .18) 46px 60px, transparent 60px 64px);
+  --wall-fade: linear-gradient(180deg, #000 0, #000 30%, transparent 70%);
+  --key: linear-gradient(180deg, #4A35A8, #3A2890);
+  --key-hover: linear-gradient(180deg, #5640B8, #43309C);
+  --key-base: #1A1150;
+  --buzzer-cap: radial-gradient(ellipse 85% 75% at 50% 18%, #FFE39A, #FFC23D 50%, #E59A0E);
+  --buzzer-rim: linear-gradient(180deg, #FFE7A6, #C9861A);
+  --buzzer-base: #6E3E0A;
+  --panel: linear-gradient(180deg, #1E1650, #120C38);
+  --panel-ring: inset 0 0 0 2px rgb(255 255 255 / .08);
+  --gold-ring: inset 0 0 0 2px rgb(255 194 61 / .5);
+  --applause: #B8135E; /* magenta deep enough for white lettering at any size */
+  color-scheme: dark;
+}
+html { background: var(--bg-stage) fixed, var(--night); }
+html body { margin: 0; min-height: 100vh; color: var(--text); font: 500 16px/1.45 var(--font-ui); -webkit-font-smoothing: antialiased; }
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--wall);
+  -webkit-mask-image: var(--wall-fade); mask-image: var(--wall-fade);
+}
+#page { display: block; max-width: 1200px; margin: 0 auto; padding: 16px 16px 24px; }
+#page .gallery-page { display: block; }
+
+/* ---------- The header: the show's name (goes home) and the house key ---------- */
+#page .app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#page .wordmark {
+  display: inline-block; padding: 0 6px 6px;
+  color: var(--gold); text-decoration: none;
+  font: 400 30px/1 var(--font-show);
+  text-shadow: 0 2px 0 #C2541D, 0 4px 0 #7A1F4E, 0 8px 14px rgb(0 0 0 / .45);
+  transform: rotate(-3deg);
+}
+#page .wordmark::after { content: "!"; color: var(--magenta); text-shadow: 0 2px 0 #8E1650, 0 4px 0 #4A0E36; }
+#page .app-header .home-key {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; margin: 0;
+  border: 0; border-radius: 14px; background: var(--key); color: var(--text);
+  box-shadow: 0 4px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); text-decoration: none;
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#page .app-header .home-key svg { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#page .app-header .home-key:hover { background: var(--key-hover); }
+#page .app-header .home-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+
+/* ---------- Headings and lines ---------- */
+#page .gallery-heading { margin: 26px 0 8px; }
+#page .gallery-heading :is(h1, h2) { margin: 0; font: 800 clamp(34px, 7vw, 56px)/1.04 var(--font-ui); letter-spacing: -.015em; color: var(--text); text-wrap: balance; }
+#page .gallery-sub { margin: 8px 0 0; max-width: 62ch; font: 600 16px/1.45 var(--font-ui); color: var(--text-2); }
+#page .gallery-note { margin: 10px 0 18px; font: 600 16px/1.45 var(--font-ui); color: var(--text-2); }
+#page .gallery-note:empty { display: none; }
+#page a.quiet, #page button.quiet, body > p a.quiet {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 4px 6px; margin: 0;
+  border: 0; background: none;
+  color: var(--text); font: 700 16px/1.2 var(--font-ui);
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; text-decoration-color: rgb(255 194 61 / .6);
+}
+#page a.quiet:hover, #page button.quiet:hover, body > p a.quiet:hover { text-decoration-color: var(--gold); }
+body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-ui); }
+
+/* ---------- Public drawings: the Daily Word lock, a plain status line (its padlock breaks open the first visit after posting) ---------- */
+#page .public-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 6px; }
+#page .lock-line { position: relative; display: flex; align-items: center; gap: 10px; margin: 0; font: 700 16px/1.4 var(--font-ui); color: var(--text-2); }
+#page .lock-mark { position: relative; flex: none; display: grid; place-items: center; width: 24px; height: 24px; color: var(--gold); }
+#page .lock-mark .lock-icon { width: 22px; height: 22px; overflow: visible; }
+#page .lock-icon .lock-shackle, #page .lock-icon .lock-half { transform-box: fill-box; transform-origin: center; }
+#page .lock-line.open { color: var(--text); }
+#page .lock-line.open .lock-mark { color: var(--teal); }
+#page .lock-line.unlocked-pop .lock-icon { animation: pop 500ms var(--ease-bounce); }
+#page .lock-line.breaking .lock-icon { animation: shake 500ms ease-in-out; }
+#page .lock-line.breaking .lock-shackle { animation: shackle 800ms var(--ease-out) 300ms forwards; }
+#page .lock-line.breaking .lock-half.left { animation: half-l 700ms var(--ease-out) 450ms forwards; }
+#page .lock-line.breaking .lock-half.right { animation: half-r 700ms var(--ease-out) 450ms forwards; }
+@keyframes shake { 20% { transform: rotate(-14deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(6deg); } }
+@keyframes shackle { 30% { transform: translateY(-3px) rotate(-12deg); } 100% { transform: translateY(-14px) rotate(-40deg); opacity: 0; } }
+@keyframes half-l { to { transform: translate(-6px, 6px) rotate(-30deg); opacity: 0; } }
+@keyframes half-r { to { transform: translate(6px, 6px) rotate(30deg); opacity: 0; } }
+#page .lock-line.unlocked-pop .lock-text { display: inline-block; animation: pop 500ms var(--ease-bounce); transform-origin: left center; }
+@keyframes pop { 40% { transform: scale(1.08) rotate(-1.5deg); } }
+#page .lock-mark .spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--gold); pointer-events: none; animation: spark 700ms var(--ease-out) forwards; transform: rotate(var(--angle)) translateX(0); }
+@keyframes spark { to { transform: rotate(var(--angle)) translateX(26px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #page .lock-line .lock-icon, #page .lock-line .lock-shackle, #page .lock-line .lock-half, #page .lock-line .lock-text, #page .lock-mark .spark { animation: none; }
+}
+
+/* ---------- Drawings: white in a dark bezel, on a dark panel ---------- */
+#page .gallery-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 22px;
+  margin: 16px 0 0; padding: 0; list-style: none;
+}
+#page .gallery-grid li {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 8px;
+  padding: 10px 10px 8px; border-radius: 22px; background: var(--panel); color: var(--text);
+  box-shadow: var(--panel-ring), var(--shadow-panel);
+  transition: translate var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+/* (rotate and translate, not transform: an older sheet pins transform on these cards with !important) */
+#page .gallery-grid li:hover { translate: 0 -3px; }
+#page .gallery-grid li.mine { box-shadow: var(--gold-ring), var(--shadow-panel); }
+#page .gallery-grid img { grid-column: 1 / -1; display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; border: 4px solid #120C35; border-radius: 14px; background: #fff; }
+#page .gallery-grid li > p { grid-column: 1 / -1; margin: 0 4px; font: 700 14px/1.35 var(--font-ui); color: var(--text-2); }
+#page .gallery-grid .vote-result { color: var(--text); }
+#page .gallery-grid .vote-result.won { display: inline-block; justify-self: start; padding: 5px 12px; border-radius: var(--r-pill); background: var(--gold); color: var(--ink); }
+
+/* Likes: a heart key; liked is magenta, the applause colour. The count on its own (yours, the leaderboard) is plain. */
+#page .like {
+  justify-self: start; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 44px; padding: 6px 16px 6px 12px; margin: 0;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--key); color: var(--text);
+  font: 900 20px/1 var(--font-board); letter-spacing: .02em;
+  box-shadow: 0 4px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2);
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#page .like:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+#page .like[aria-pressed="true"] { background: var(--applause); color: #fff; box-shadow: 0 4px 0 #6A0A36, inset 0 2px 0 rgb(255 255 255 / .25); }
+#page .like[aria-pressed="true"] .heart { animation: beat 380ms var(--ease-bounce); }
+@keyframes beat { 50% { transform: scale(1.35); } }
+#page .heart { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
+#page .heart.filled { fill: currentColor; }
+#page .like-count { display: inline-flex; align-items: center; gap: 6px; font: 900 22px/1 var(--font-board); letter-spacing: .02em; color: var(--gold); }
+#page .like-count .heart { color: var(--magenta); }
+#page .gallery-grid .report { justify-self: end; color: var(--text-2); font-size: 14px; text-decoration-color: rgb(201 190 240 / .4); }
+#page .gallery-grid .report:disabled { cursor: default; text-decoration: none; }
+
+/* ---------- Today's leaderboard: the scoreboard ---------- */
+#page .lb-body { display: grid; gap: 40px; margin-top: 10px; }
+#page .lb-group h2, #page .yesterday-title { margin: 0 0 14px; font: 800 clamp(24px, 5vw, 34px)/1.1 var(--font-ui); color: var(--bulb); }
+#page .lb-group.locked, #page .yesterday { padding: 18px 18px 20px; border-radius: 24px; background: var(--panel); box-shadow: var(--panel-ring), var(--shadow-panel); }
+#page .lb-note, #page .lb-standing { margin: 0 0 12px; font: 700 16px/1.45 var(--font-ui); color: var(--text-2); }
+#page .lb-standing { color: var(--text); }
+/* the one thing to do on an empty or locked board: the gold buzzer */
+#page .lb-action {
+  position: relative; display: inline-flex; align-items: center; min-height: 56px; padding: 6px 28px 8px;
+  border: 5px solid transparent; border-radius: 36px;
+  background: var(--buzzer-cap) padding-box, var(--buzzer-rim) border-box; color: var(--ink); text-decoration: none;
+  font: 400 22px/1 var(--font-show); text-shadow: 0 2px 0 rgb(255 255 255 / .4);
+  box-shadow: 0 6px 0 var(--buzzer-base), 0 12px 22px rgb(0 0 0 / .45), inset 0 -5px 10px rgb(150 80 0 / .28);
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#page .lb-action:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--buzzer-base), 0 6px 12px rgb(0 0 0 / .4); }
+
+/* The top three on podiums. Phones: #1 across the top, #2 and #3 side by side. Wider: #2, #1, #3, #1 tallest. */
+#page .lb-podium {
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "first first" "second third";
+  gap: 26px 14px; margin: 18px 0 0; padding: 0; list-style: none; align-items: end;
+}
+#page .lb-entry { position: relative; display: grid; gap: 0; color: var(--text); }
+#page .lb-podium-entry:nth-child(1) { grid-area: first; --pod: 74px; --lit: var(--gold); }
+#page .lb-podium-entry:nth-child(2) { grid-area: second; --pod: 58px; --lit: var(--teal); }
+#page .lb-podium-entry:nth-child(3) { grid-area: third; --pod: 48px; --lit: var(--magenta); }
+#page .lb-podium-entry img {
+  position: relative; z-index: 1; display: block; width: calc(100% - 20px); margin: 0 auto -6px; height: auto; aspect-ratio: 3 / 2;
+  border: 5px solid #120C35; border-radius: 14px; background: #fff;
+  box-shadow: 0 0 0 3px var(--lit), 0 16px 28px -10px rgb(0 0 0 / .7);
+}
+/* the podium: a violet block with a lit top edge in the contestant's colour, the place on a flip tile, the likes */
+#page .lb-podium-entry .lb-place, #page .lb-podium-entry .lb-info { position: relative; z-index: 2; }
+#page .lb-podium-entry {
+  grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "img img" "place info";
+  padding-bottom: 0;
+}
+#page .lb-podium-entry img { grid-area: img; }
+#page .lb-podium-entry::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--pod) + 22px); z-index: 0; border-radius: 18px 18px 10px 10px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / .05) 0 3px, transparent 3px 22px),
+    linear-gradient(90deg, #1B1350, #3A2690 30%, #4A31A8 45%, #2A1C6C 75%, #160F40);
+  box-shadow: inset 0 3px 0 var(--lit), 0 -6px 18px -6px var(--lit), 0 18px 30px -12px rgb(0 0 0 / .7);
+}
+#page .lb-podium-entry .lb-place {
+  grid-area: place; align-self: center; margin: 14px 0 12px 12px;
+  display: grid; place-items: center; min-width: 46px; height: 56px; padding: 0 8px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #FFF8E8 0 49.4%, #F1E2C2 50.6% 100%); color: var(--ink);
+  box-shadow: 0 4px 0 #B9945A, 0 6px 12px rgb(0 0 0 / .4);
+  font: 900 36px/1 var(--font-board);
+}
+#page .lb-podium-entry .lb-info {
+  grid-area: info; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: calc(var(--pod) + 16px); padding: 10px 14px 8px 10px;
+}
+#page .lb-podium-entry .like-count { font-size: 30px; }
+/* #1: crowned, in a gold spotlight */
+#page .lb-podium-entry:nth-child(1)::before {
+  content: ""; position: absolute; z-index: 0; left: 0; right: 0; top: -90px; height: calc(100% + 90px); pointer-events: none;
+  background: radial-gradient(ellipse 46% 44% at 50% 46%, rgb(255 231 166 / .24), transparent 100%);
+}
+#page .lb-podium-entry:nth-child(1) .lb-place {
+  position: relative; background: var(--buzzer-cap); box-shadow: 0 4px 0 var(--buzzer-base), 0 8px 16px rgb(0 0 0 / .45);
+}
+#page .lb-podium-entry:nth-child(1) .lb-place::before {
+  content: ""; position: absolute; left: 50%; top: -30px; width: 40px; height: 28px; translate: -50% 0;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 28'><path d='M4 24 2 6l10 8 8-12 8 12 10-8-2 18z' fill='%23FFC23D' stroke='%231B1240' stroke-width='2.4' stroke-linejoin='round'/><circle cx='20' cy='18' r='2.6' fill='%23F2358A'/></svg>") center / contain no-repeat;
+}
+#page .lb-podium-entry:nth-child(2) .lb-place, #page .lb-podium-entry:nth-child(3) .lb-place { min-width: 40px; height: 48px; font-size: 30px; }
+#page .lb-podium-entry:nth-child(n+2) .like-count { font-size: 24px; }
+#page .lb-yours { padding: 4px 10px; border-radius: var(--r-pill); background: var(--teal); color: var(--ink); font: 800 12px/1.2 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; }
+#page .lb-entry.mine img { box-shadow: 0 0 0 3px var(--teal), 0 16px 28px -10px rgb(0 0 0 / .7); }
+
+/* Places 4 to 10: scoreboard rows */
+#page .lb-list { display: grid; gap: 12px; margin: 30px 0 0; padding: 0; list-style: none; }
+#page .lb-list .lb-entry {
+  grid-template-columns: auto 120px minmax(0, 1fr); align-items: center; gap: 16px;
+  padding: 8px 18px 8px 10px; border-radius: 18px;
+  background: var(--panel); box-shadow: var(--panel-ring), var(--shadow-panel);
+}
+#page .lb-list .lb-place {
+  display: grid; place-items: center; min-width: 44px; height: 54px; padding: 0 6px; border-radius: 8px;
+  background: linear-gradient(180deg, #2A2160 50%, #221A52 50%); color: var(--teal);
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / .35);
+  font: 900 30px/1 var(--font-board);
+}
+#page .lb-list .lb-entry img { width: 120px; height: auto; aspect-ratio: 3 / 2; border: 3px solid #120C35; border-radius: 10px; background: #fff; }
+#page .lb-list .lb-info { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+#page .lb-list .lb-entry.mine { box-shadow: var(--gold-ring), var(--shadow-panel); }
+#page .lb-links { margin: 34px 0 0; }
+
+/* Yesterday's winners */
+#page .yesterday-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 18px; margin: 0; padding: 0; list-style: none; }
+#page .yesterday-card { display: grid; gap: 8px; padding: 10px; border-radius: 18px; background: rgb(11 9 38 / .5); box-shadow: var(--gold-ring); }
+#page .yesterday-card img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; border: 4px solid #120C35; border-radius: 12px; background: #fff; }
+#page .yesterday-text { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0 4px; font: 700 14px/1.3 var(--font-ui); color: var(--text-2); }
+#page .yesterday-caption { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Report this drawing? A dark panel over the page ---------- */
+dialog.ask-box {
+  width: min(calc(100% - 32px), 480px); margin: auto; padding: 24px;
+  border: 0; border-radius: 26px; background: var(--panel); color: var(--text);
+  font: 500 16px/1.5 var(--font-ui); box-shadow: var(--gold-ring), 0 30px 70px -10px rgb(0 0 0 / .8);
+}
+dialog.ask-box::backdrop { background: rgb(11 9 38 / .72); }
+dialog.ask-box h2 { margin: 0 0 8px; font: 800 26px/1.1 var(--font-ui); }
+dialog.ask-box p { margin: 0 0 18px; color: var(--text-2); font-weight: 600; }
+dialog.ask-box .ask-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+dialog.ask-box .btn.primary {
+  min-height: 56px; padding: 6px 26px 8px; border: 5px solid transparent; border-radius: 36px;
+  background: var(--buzzer-cap) padding-box, var(--buzzer-rim) border-box; color: var(--ink);
+  font: 400 22px/1 var(--font-show); cursor: pointer;
+  box-shadow: 0 6px 0 var(--buzzer-base), 0 12px 22px rgb(0 0 0 / .45);
+}
+dialog.ask-box .quiet { min-height: 44px; padding: 4px 8px; border: 0; background: none; color: var(--text); font: 700 16px/1.2 var(--font-ui); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: rgb(255 194 61 / .6); cursor: pointer; }
+
+/* ---------- Sizes ---------- */
+@media (max-width: 599px) {
+  #page .lb-list .lb-entry { grid-template-columns: auto 92px minmax(0, 1fr); gap: 12px; padding-right: 12px; }
+  #page .lb-list .lb-entry img { width: 92px; }
+  #page .lb-podium-entry:nth-child(n+2) .lb-place { margin-left: 8px; min-width: 34px; height: 42px; font-size: 26px; }
+  #page .lb-podium-entry:nth-child(n+2) .lb-info { padding-right: 8px; }
+  #page .lb-podium-entry:nth-child(n+2) .like-count { font-size: 20px; }
+}
+@media (min-width: 640px) {
+  #page .lb-podium { grid-template-columns: 1fr 1.25fr 1fr; grid-template-areas: "second first third"; gap: 22px; margin-top: 70px; }
+}
+@media (min-width: 900px) {
+  #page { padding: 24px 32px 32px; }
+  #page .wordmark { font-size: 36px; }
+  #page .lb-podium-entry:nth-child(1) { --pod: 110px; }
+  #page .lb-podium-entry:nth-child(2) { --pod: 76px; }
+  #page .lb-podium-entry:nth-child(3) { --pod: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #page *, #page *::before, #page *::after { animation: none !important; transition-duration: 0ms !important; }
+}
+/* The way-to-draw link inside a note: inline, so its 44px tap area (padding) doesn't stretch the line it sits on. */
+#page .gallery-note a.quiet { display: inline; padding: 12px 4px; margin: -12px 0; }

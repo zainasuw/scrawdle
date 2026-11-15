@@ -1,0 +1,386 @@
+/* Scrawdle: the TV game show, drawing screen (#game only; Scrawdle Party's pad is styled in social.css).
+ * The phone is a contestant's buzzer pad: a chunky violet device with a little scoreboard on top (the category and
+ * the word, under a row of lit bulbs), the white canvas in a dark bezel (the largest thing), round colour buttons,
+ * chunky tool keys that press in and light gold when picked, and one giant gold Done! buzzer. Tokens: stage.css.
+ * Older stylesheets sit in the "legacy" layer (index.html); everything inside #game is reset, then drawn here.
+ * Performance: no filter, mask or clip on the canvas or any ancestor of it (the pad, the bezel and the glow are
+ * backgrounds, borders, box-shadows and pseudo-elements beside it). Phones: everything on one screen, nothing scrolls. */
+
+/* ---------- A clean slate inside the drawing screen ---------- */
+#game, #game :where(*:not(svg *, .cp-panel, .cp-panel *)), #game *:not(.cp-panel, .cp-panel *)::before, #game *:not(.cp-panel, .cp-panel *)::after { all: revert; }
+#game, #game :where(*:not(.cp-panel, .cp-panel *)), #game *::before, #game *::after { box-sizing: border-box; }
+html:has(#game:not([hidden])) body { margin: 0; overflow: hidden; }
+html:has(#slot:not([hidden])) #game { display: none; }
+#game ::selection { background: var(--gold); color: var(--ink); }
+#game :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 14px; }
+#game svg { display: block; overflow: visible; }
+#game button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#game button:disabled { cursor: default; }
+#game [hidden] { display: none !important; }
+
+/* ---------- The pad ---------- */
+#game {
+  --gap: 10px;
+  /* the keys: violet, pressed out; the one in your hand is gold and pressed in */
+  --key: linear-gradient(180deg, #4A35A8, #3A2890);
+  --key-base: #1A1150;
+  --key-lit: linear-gradient(180deg, #FFD467, #FFB81F);
+  --key-lit-base: #9A5B12;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  height: 100dvh;
+  overflow: hidden;
+  font: 600 16px/1.3 var(--font-ui);
+  color: var(--text);
+  background: var(--bg-stage);
+  -webkit-font-smoothing: antialiased;
+  /* Phones and split screen first: one column, nothing scrolls. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "top" "stage" "colors" "tray" "footer";
+  row-gap: var(--gap);
+  padding: 20px 20px max(20px, calc(env(safe-area-inset-bottom) + 12px));
+}
+/* the device itself: a violet slab with a lit top edge, a heavy base and two screws */
+#game::before {
+  content: ""; position: absolute; inset: 8px; z-index: -1; pointer-events: none;
+  border-radius: 36px;
+  background:
+    radial-gradient(circle, #9C8BE0 0 1.5px, #3B2A80 2px 3.6px, rgb(59 42 128 / 0) 4px) 14px 14px / 8px 8px no-repeat,
+    radial-gradient(circle, #9C8BE0 0 1.5px, #3B2A80 2px 3.6px, rgb(59 42 128 / 0) 4px) calc(100% - 14px) 14px / 8px 8px no-repeat,
+    linear-gradient(180deg, #3A2690, #24176A 40%, #1C1258);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / .22), inset 0 -6px 0 rgb(0 0 0 / .35), 0 0 0 2px #120C35, 0 10px 30px rgb(0 0 0 / .5);
+}
+#game #stage, #game .easel, #game #tools { display: contents; }
+#game .game-top { grid-area: top; }
+#game .easel-board { grid-area: stage; }
+#game .easel-ledge { grid-area: colors; min-width: 0; }
+#game .tray { grid-area: tray; min-width: 0; }
+#game .studio-footer { grid-area: footer; min-width: 0; }
+
+/* ---------- A small key (help, home) ---------- */
+#game .icon-key {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; padding: 0; margin: 0;
+  border: 0; border-radius: 14px;
+  background: var(--key); color: var(--text);
+  box-shadow: 0 4px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2);
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#game .icon-key svg { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+#game .icon-key:hover { background: linear-gradient(180deg, #5640B8, #43309C); }
+#game .icon-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+
+/* ---------- The top: the scoreboard (category and word) and the keys ---------- */
+#game .game-top { display: flex; align-items: stretch; gap: var(--gap); min-width: 0; }
+#game .game-top > .wm-slot { display: none; }
+#game .game-nav { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; flex: none; }
+
+#game .word-board {
+  position: relative;
+  flex: 1 1 auto; min-width: 0; min-height: 64px;
+  margin: 0; padding: 12px 14px 10px 12px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 30% 0%, #221A5A, #0D0A2A 80%);
+  box-shadow: inset 0 0 0 2px rgb(255 194 61 / .5), inset 0 8px 20px rgb(0 0 0 / .5);
+  color: var(--text);
+  display: flex; flex-direction: row; align-items: center; gap: 10px;
+}
+/* the row of lit bulbs along the top edge of the scoreboard (they hold still; only the TV's word board chases) */
+#game .word-board::before {
+  content: ""; position: absolute; left: 18px; right: 18px; top: -4px; height: 8px; pointer-events: none;
+  background: radial-gradient(circle, #fff 0 1.5px, var(--bulb) 2px, var(--gold) 3.5px, transparent 4.5px) 0 0 / 16px 8px space no-repeat;
+}
+/* the category is its die face beside the word, on a cream disc (no label above the word) */
+#game .word-board > .cat-icon {
+  position: relative; display: grid; place-items: center; flex: none;
+  width: 40px; height: 40px; padding: 4px; border-radius: 50%;
+  background: var(--cream); box-shadow: 0 0 0 3px var(--magenta), 0 4px 10px rgb(0 0 0 / .4);
+}
+#game .word-board > .cat-icon svg { display: block; width: 100%; height: 100%; }
+#game .word-text {
+  margin: 0; min-width: 0;
+  font: 800 21px/1.1 var(--font-ui); letter-spacing: -.005em;
+  color: #fff;
+  overflow-wrap: anywhere; text-wrap: balance;
+  animation: word-on var(--slow) var(--ease-out) both;
+}
+#game .word-board[data-size="s"] .word-text { font-size: 18px; }
+#game .word-board[data-size="xs"] .word-text { font-size: 15px; line-height: 1.15; }
+#game .word-text::first-letter { text-transform: uppercase; }
+#game .word-text em { font-style: normal; color: var(--magenta); }
+@keyframes word-on { from { transform: translateY(6px); opacity: 0; } }
+
+/* ---------- The canvas: white, in the pad's dark bezel ---------- */
+#game .easel-board {
+  position: relative;
+  container-type: size;
+  display: grid; place-items: center;
+  min-height: 0; min-width: 0;
+  /* the pad's screen: dark round the 3:2 canvas, so spare room reads as the bezel, not as gaps */
+  border-radius: 24px;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, #1A1248, #0E0A2C);
+  box-shadow: inset 0 2px 8px rgb(0 0 0 / .6), 0 1px 0 rgb(255 255 255 / .12);
+}
+/* The canvas is 3:2 with no padding or border (pointer mapping uses clientLeft/clientWidth). The bezel is its holder's
+   border, and the holder is white inside it, so the canvas's square corners sit inside a rounded white screen. */
+#game .stamp {
+  position: relative;
+  width: min(100cqw, calc((100cqh - 24px) * 1.5 + 24px));
+  padding: 6px;
+  border: 6px solid #120C35;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 10px 22px -10px rgb(0 0 0 / .7);
+}
+#game #board {
+  display: block; width: 100%; height: auto; aspect-ratio: 3 / 2;
+  margin: 0; padding: 0; border: 0;
+  background: #fff;
+  touch-action: none; cursor: crosshair;
+}
+#game #board.locked { cursor: default; }
+#game .splash-layer { position: absolute; z-index: 1; pointer-events: none; }
+
+/* ---------- Colours: round buttons; the one you're using gets a white ring and a gold glow ---------- */
+#game .tray-colors { display: flex; align-items: center; gap: 2px; min-width: 0; }
+#game .swatches { display: flex; flex: 1 1 auto; justify-content: space-between; gap: 2px; min-width: 0; }
+#game .swatch, #game .wheel {
+  position: relative; flex: 0 1 34px;
+  width: 34px; min-width: 28px; height: 44px; padding: 0; margin: 0;
+  border: 0; background: none;
+  display: grid; place-items: center;
+}
+#game .swatch::before, #game .wheel::before {
+  content: ""; width: 27px; height: 27px; border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 -3px 0 rgb(0 0 0 / .2), 0 0 0 2px #120C35;
+  transition: transform var(--fast) var(--ease-bounce), box-shadow var(--fast) var(--ease-out);
+}
+#game .swatch:hover::before, #game .wheel:hover::before { transform: translateY(-2px); }
+#game .swatch[aria-pressed="true"]::before { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--gold), 0 4px 8px rgb(0 0 0 / .45); }
+#game .wheel::before { background: conic-gradient(#F2358A, #FFC23D, #7CE36A, #1ED3C2, #5B7BFF, #B45BFF, #F2358A); }
+#game .wheel::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M8 2v12M2 8h12' stroke='%23fff' stroke-width='3' stroke-linecap='round'/></svg>") center / 13px 13px no-repeat;
+}
+#game .wheel.on::before { background: var(--custom-color); transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--gold), 0 4px 8px rgb(0 0 0 / .45); }
+#game .custom-color { position: relative; flex: none; display: flex; align-items: center; }
+#game .custom-color > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#game .joystick { display: none; }
+
+/* ---------- Tools: chunky keys; the one in your hand is pressed in and lit gold ---------- */
+#game .tray { display: flex; }
+#game .tray-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 7px; width: 100%; min-width: 0; }
+#game .tool, #game .settings-toggle {
+  position: relative; top: -2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-width: 0; height: 60px; padding: 0 2px; margin: 0;
+  border: 0; border-radius: 15px;
+  background: var(--key); color: var(--text);
+  font: 700 12px/1 var(--font-ui);
+  box-shadow: 0 5px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2);
+  transition: top var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#game .tool .tool-icon { display: grid; place-items: center; }
+#game .tool .tool-icon svg { width: 26px; height: 26px; }
+#game .tool:hover:not(:disabled, [aria-pressed="true"]) { background: linear-gradient(180deg, #5640B8, #43309C); }
+#game .tool:active:not(:disabled, [aria-pressed="true"]) { top: 2px; box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+#game .tray-tools .tool[aria-pressed="true"], #game .settings-toggle[aria-pressed="true"] {
+  top: 2px; background: var(--key-lit); color: var(--ink);
+  box-shadow: 0 1px 0 var(--key-lit-base), inset 0 2px 4px rgb(120 60 0 / .35), 0 6px 14px -4px rgb(255 194 61 / .55);
+}
+#game .tool:disabled { opacity: .45; }
+#game .tool-label { white-space: nowrap; }
+/* Size: the dot shows the size, colour and opacity you're drawing with, on a small cream well */
+#game .settings-toggle .st-dot { position: relative; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); box-shadow: inset 0 2px 3px rgb(0 0 0 / .25); }
+#game .settings-toggle .st-dot i { grid-area: 1 / 1; display: block; max-width: 22px; max-height: 22px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgb(27 18 64 / .3); }
+
+/* ---------- The bottom: Undo, Redo, Clear, and the giant gold Done! buzzer ---------- */
+#game .studio-footer { position: relative; display: flex; align-items: stretch; gap: 9px; }
+#game .history-actions { display: flex; gap: 6px; flex: none; }
+#game .history-actions .tool { width: 50px; height: auto; min-height: 60px; }
+#game .save-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#game .save-status[data-state="failed"] {
+  width: auto; height: auto; clip-path: none; overflow: visible; bottom: calc(100% + 8px); left: 0;
+  padding: 6px 12px; border-radius: var(--r-pill); background: var(--danger); color: var(--ink); font: 700 14px/1.2 var(--font-ui);
+}
+/* the buzzer: a gold rim round a domed gold cap; it presses down into its base */
+#game .done {
+  position: relative; flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  height: 84px; padding: 0 12px; margin: 0;
+  border: 7px solid transparent; border-radius: 50px;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 22%, #FFE39A, #FFC23D 52%, #E59A0E) padding-box,
+    linear-gradient(180deg, #FFE7A6, #C9861A) border-box;
+  color: var(--ink);
+  font: 400 30px/1 var(--font-show);
+  text-shadow: 0 2px 0 rgb(255 255 255 / .45);
+  box-shadow: 0 6px 0 #6E3E0A, 0 12px 24px rgb(0 0 0 / .45), inset 0 -6px 10px rgb(150 80 0 / .28);
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
+}
+#game .done::after { content: ""; position: absolute; left: 14%; top: 5px; width: 28%; height: 9px; border-radius: 50%; background: rgb(255 255 255 / .45); pointer-events: none; }
+#game .done .done-tick { flex: none; width: 24px; height: 24px; }
+#game .done { gap: 8px; }
+#game .done:hover:not(:disabled, .blank) { filter: brightness(1.05) saturate(1.05); }
+#game .done:active:not(:disabled, .blank) { transform: translateY(5px); box-shadow: 0 1px 0 #6E3E0A, 0 6px 12px rgb(0 0 0 / .4), inset 0 -3px 10px rgb(150 80 0 / .28); }
+/* nothing drawn yet: the buzzer is unlit (index.html says why if it's pressed) */
+#game .done.blank {
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 22%, #6A5AB0, #4A3A94 55%, #36287A) padding-box,
+    linear-gradient(180deg, #8C7AD6, #4A3A94) border-box;
+  color: var(--text-2); text-shadow: none;
+  box-shadow: 0 6px 0 #1A1150, 0 12px 24px rgb(0 0 0 / .4);
+}
+#game .done.blank::after { opacity: .25; }
+#game .done:disabled { opacity: .6; }
+
+/* ---------- Size and opacity: a scoreboard panel that pops up beside the Size key ---------- */
+#game #brush-settings:not(.open) { display: none; }
+#game #brush-settings.open {
+  position: fixed; z-index: 40;
+  display: grid; gap: 10px;
+  padding: 14px 16px 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #1E1650, #120C38);
+  color: var(--text);
+  box-shadow: inset 0 0 0 2px rgb(255 194 61 / .5), 0 18px 40px -8px rgb(0 0 0 / .7);
+  font: 600 14px/1.3 var(--font-ui);
+  animation: pop-in var(--base) var(--ease-out);
+}
+@keyframes pop-in { from { transform: translateY(6px) scale(.96); opacity: 0; } }
+#game .settings-title { margin: 0; font: 800 18px/1.1 var(--font-ui); color: var(--bulb); }
+#game .brush-controls { display: grid; gap: 8px; }
+#game .brush-toggle, #game .brush-choice {
+  min-height: 44px; padding: 6px 12px; margin: 0;
+  border: 0; border-radius: 12px;
+  background: var(--key); color: var(--text);
+  font: 700 14px/1.1 var(--font-ui);
+  box-shadow: 0 3px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .18);
+}
+#game .brush-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#game .brush-panel[hidden] { display: none !important; }
+#game .brush-choice[aria-pressed="true"] { background: var(--key-lit); color: var(--ink); box-shadow: 0 1px 0 var(--key-lit-base); }
+#game .brush-choice canvas { display: block; max-width: 100%; }
+#game .tray-sizes { display: grid; gap: 8px; }
+#game .size-value, #game .opacity-value { font: 900 18px/1 var(--font-board); color: var(--teal); letter-spacing: .02em; }
+#game .size-top { display: flex; align-items: center; gap: 8px; }
+#game .size-dot {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0; margin: 0;
+  border: 0; border-radius: 50%; background: var(--key); box-shadow: 0 3px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .18);
+}
+#game .size-dot i { display: block; border-radius: 50%; background: var(--cream); }
+#game .size-dot[aria-pressed="true"] { background: var(--key-lit); box-shadow: 0 1px 0 var(--key-lit-base); }
+#game .size-dot[aria-pressed="true"] i { background: var(--ink); }
+#game .stroke-preview { margin-left: auto; padding: 2px 6px; border-radius: 10px; background: #fff; }
+#game .stroke-preview svg { width: 56px; height: 36px; fill: none; stroke-linecap: round; }
+#game .tray-sizes input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--gold); }
+#game .tray-sizes.no-size .size-top, #game .tray-sizes.no-size > input { opacity: .4; }
+#game .opacity-row { display: flex; justify-content: space-between; align-items: baseline; font: 700 14px/1.2 var(--font-ui); color: var(--text-2); }
+#game .tool-opacity { display: grid; gap: 2px; }
+#game .brush-kind { display: none; }
+
+/* ---------- Small phones: the extra tools (Pencil, Line) step out so the rest stay big ---------- */
+@media (max-width: 420px) {
+  #game .tray-tools .tool[data-tool="pencil"], #game .tray-tools .tool[data-tool="line"] { display: none; }
+}
+@media (max-width: 350px) {
+  #game { --gap: 8px; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); }
+  #game .swatch, #game .wheel { min-width: 24px; }
+  #game .swatch::before, #game .wheel::before { width: 23px; height: 23px; }
+  #game .history-actions .tool { width: 46px; }
+  #game .done { font-size: 26px; }
+}
+/* Short phone screens (and a phone with the keyboard bar): the keys under the canvas lose their labels. */
+@media (max-height: 640px) and (max-aspect-ratio: 5/4) {
+  #game .tool-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #game .tool, #game .settings-toggle { height: 46px; }
+  #game .history-actions .tool { min-height: 46px; }
+  #game .done { height: 62px; font-size: 28px; border-width: 5px; }
+  #game .game-nav { flex-direction: row; align-items: center; }
+  #game .word-board { min-height: 54px; padding-top: 8px; padding-bottom: 8px; }
+  #game .word-board > .cat-icon { width: 34px; height: 34px; }
+}
+
+/* ---------- Tall phones: the spare height goes to bigger keys and two rows of colours, round the canvas ---------- */
+@media (max-aspect-ratio: 5/4) and (max-width: 699px) and (min-height: 740px) {
+  #game { --gap: 12px; }
+  #game .word-board { min-height: 74px; padding: 12px 14px 12px 12px; }
+  #game .word-text { font-size: 22px; }
+  #game .word-board[data-size="s"] .word-text { font-size: 19px; }
+  #game .word-board[data-size="xs"] .word-text { font-size: 16px; }
+  #game .tray-colors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; }
+  #game .swatches { display: contents; }
+  #game .swatch, #game .wheel { width: 100%; height: 44px; }
+  #game .swatch::before, #game .wheel::before { width: 32px; height: 32px; }
+  #game .custom-color { justify-content: center; }
+  #game .tool, #game .settings-toggle { height: 66px; }
+  #game .history-actions .tool { min-height: 66px; }
+  #game .done { height: 96px; font-size: 32px; }
+  #game .done .done-tick { width: 26px; height: 26px; }
+}
+
+/* ---------- Wide screens, and phones held sideways: tools down the left, colours and Done on the right ---------- */
+@media (min-aspect-ratio: 5/4) and (min-width: 700px) {
+  #game {
+    --gap: 14px;
+    grid-template-columns: auto minmax(0, 1fr) minmax(184px, 228px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "top top top" "tray stage colors" "tray stage footer";
+    column-gap: 18px;
+    padding: 24px 28px 26px;
+  }
+  #game::before { inset: 10px; border-radius: 40px; }
+  #game .game-top { align-items: center; }
+  #game .game-top > .wm-slot { display: block; flex: none; }
+  #game .game-top .wordmark {
+    display: inline-block; padding: 0 6px 6px;
+    color: var(--gold);
+    font: 400 32px/1 var(--font-show);
+    text-shadow: 0 2px 0 #C2541D, 0 4px 0 #7A1F4E, 0 8px 14px rgb(0 0 0 / .45);
+    transform: rotate(-3deg); cursor: pointer;
+  }
+  #game .game-top .wordmark::after { content: "!"; color: var(--magenta); text-shadow: 0 2px 0 #8E1650, 0 4px 0 #4A0E36; }
+  #game .word-board { flex: 0 1 760px; margin: 0 auto; min-height: 72px; padding: 12px 22px 12px 14px; }
+  #game .word-text { font-size: 28px; }
+  #game .word-board[data-size="s"] .word-text { font-size: 23px; }
+  #game .word-board[data-size="xs"] .word-text { font-size: 18px; }
+  #game .word-board > .cat-icon { width: 46px; height: 46px; }
+  #game .game-nav { flex-direction: row; align-items: center; }
+  #game .tray { flex-direction: column; justify-content: center; }
+  #game .tray-tools { grid-auto-flow: row; grid-auto-columns: auto; align-content: center; gap: 12px; width: auto; }
+  #game .tray-tools .tool, #game .settings-toggle { width: 70px; height: 60px; }
+  #game .easel-ledge { align-self: start; padding-top: 6px; }
+  #game .tray-colors { display: grid; grid-template-columns: repeat(4, 44px); justify-content: center; gap: 6px 8px; }
+  #game .swatches { display: contents; }
+  #game .swatch, #game .wheel { width: 44px; height: 44px; }
+  #game .swatch::before, #game .wheel::before { width: 34px; height: 34px; }
+  #game .studio-footer { flex-direction: column; align-items: stretch; align-self: end; gap: 16px; }
+  #game .history-actions { justify-content: center; }
+  #game .history-actions .tool { width: 60px; min-height: 56px; }
+  #game .done { flex: none; height: 88px; font-size: 36px; }
+  #game .done .done-tick { width: 30px; height: 30px; }
+}
+@media (min-aspect-ratio: 5/4) and (min-width: 700px) and (max-height: 560px) {
+  #game { --gap: 8px; padding: 16px 18px; }
+  #game::before { inset: 4px; border-radius: 28px; }
+  #game .tray-tools { gap: 6px; }
+  #game .tool-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #game .tray-tools .tool, #game .settings-toggle { width: 54px; height: 42px; }
+  #game .tray-tools .tool[data-tool="pencil"], #game .tray-tools .tool[data-tool="line"] { display: none; }
+  #game .word-board { min-height: 50px; padding-block: 6px; }
+  #game .word-text { font-size: 20px; }
+  #game .word-board > .cat-icon { width: 34px; height: 34px; }
+  #game .game-top .wordmark { font-size: 22px; }
+  #game .icon-key { width: 44px; height: 44px; }
+  #game .history-actions .tool { min-height: 44px; width: 50px; }
+  #game .done { height: 60px; font-size: 26px; border-width: 5px; }
+  #game .swatch, #game .wheel { height: 36px; }
+  #game .swatch::before, #game .wheel::before { width: 26px; height: 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #game .word-text, #game #brush-settings.open { animation: none; }
+}

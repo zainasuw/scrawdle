@@ -1,0 +1,199 @@
+/* Scrawdle design tokens. Loaded before every other stylesheet, on every page.
+ *
+ * One system for the whole game: the paper ramp (one warm grey family, hue 85), the yellow ramp (the one accent),
+ * two semantic colors that always come with a word, two typefaces in eight sizes, one spacing scale, three radii,
+ * two shadow recipes lit from the top-left (hard sticker offsets at 1:2, and one layered soft shadow for popovers), and three durations with two curves. Light values live on :root, dark
+ * values under html[data-theme="dark"]. Hex values are the sRGB fallback; the OKLCH values they were measured in
+ * take over in browsers that understand them. The old role names (--paper, --ink, --yellow, --line, --surface ...)
+ * are aliases of these steps, so every older rule reads the same system.
+ *
+ * Numbers: scratchpad/upgrade-review/plan.md section 3. */
+@font-face { font-family: "Fredoka"; src: url("fonts/fredoka.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: "Patrick Hand"; src: url("fonts/patrick-hand.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Gochi Hand"; src: url("fonts/gochi-hand.woff2") format("woff2"); font-display: swap; }
+
+:root {
+  color-scheme: light;
+  /* ---------- Paper: the only grey family ---------- */
+  --paper-1: #fdfaf4;   /* app background */
+  --paper-2: #f7f3eb;   /* subtle background */
+  --paper-3: #f1ebde;   /* component background: keys, inputs */
+  --paper-4: #e7dfce;   /* hover; the drawing screen's page */
+  --paper-5: #ddd3bf;   /* active, selected neutral */
+  --paper-6: #c7bda8;   /* subtle border, dividers */
+  --paper-7: #a69e8d;   /* interactive border */
+  --paper-8: #868073;   /* strong border (3:1), disabled text floor */
+  --paper-9: #625d52;   /* placeholder (Lc 80) */
+  --paper-10: #514d43;  /* icon grey */
+  --paper-11: #4b4740;  /* secondary text (Lc 88) */
+  --paper-12: #262420;  /* ink: text, outlines, sticker shadows */
+  /* ---------- Yellow: the one accent ---------- */
+  --yellow-1: #fffae4;
+  --yellow-2: #fff3c6;  /* your-own-card tint, hover tint */
+  --yellow-3: #ffea9d;  /* selected card, the sticky note */
+  --yellow-4: #ffe279;
+  --yellow-5: #ffda5a;
+  --yellow-9: #f7cb45;  /* primary buttons, selected tool, Daily card: ink text 10:1, Lc 75 */
+  --yellow-10: #eeb92c; /* primary hover and pressed */
+  --yellow-11: #8d5e00; /* yellow text on paper */
+  --yellow-12: #54360b; /* text on yellow-3 */
+  /* ---------- Semantic: sparingly, always with a word or icon ---------- */
+  --success: #2f4a2f;     --success-bg: #dfe9d5;
+  --danger: #7a2a14;      --danger-bg: #f6ddd4;
+  --focus: var(--paper-12);
+  /* ---------- Wood and the pin: the easel's character. Low chroma, so they never compete with the yellow ---------- */
+  --wood-frame: #7e5a42;  /* the frame around the canvas */
+  --wood-ledge: #c89a6f;  /* the tray the colors stand in */
+  --wood-lip: #9d6f48;    /* the tray's front */
+  --pin: #c74c41;         /* the sticky note's pushpin: a calm red, never used for a control */
+  --pin-lit: #ef806f;     /* its highlight */
+  --canvas: #fff;         /* the drawing surface stays white in both themes */
+  --toast-bg: var(--paper-12); --toast-text: var(--paper-1); --toast-action: var(--yellow-9); --toast-edge: transparent; /* the "Cleared. Undo" line: ink, with the accent for its one action */
+  --surface: #fff;        /* sticker cards and buttons */
+  --edge: var(--paper-12); /* the sticker outline */
+  --scrim: rgb(38 36 32 / .35);
+  --shadow-ink: var(--paper-12);
+  --pop-tint: 48 45 40;   /* the paper hue, for the soft shadow */
+  /* a faint paper grain over the light page; the dark page is flat */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .26 0 0 0 0 .2 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+@supports (color: oklch(0 0 0)) {
+  :root {
+    --paper-1: oklch(0.985 0.008 85); --paper-2: oklch(0.965 0.012 85); --paper-3: oklch(0.94 0.018 85); --paper-4: oklch(0.905 0.024 85);
+    --paper-5: oklch(0.87 0.03 85); --paper-6: oklch(0.80 0.03 85); --paper-7: oklch(0.70 0.025 85); --paper-8: oklch(0.60 0.02 85);
+    --paper-9: oklch(0.48 0.018 85); --paper-10: oklch(0.42 0.016 85); --paper-11: oklch(0.40 0.012 85); --paper-12: oklch(0.26 0.008 85);
+    --yellow-1: oklch(0.985 0.03 92); --yellow-2: oklch(0.965 0.06 92); --yellow-3: oklch(0.94 0.10 92); --yellow-4: oklch(0.92 0.13 92); --yellow-5: oklch(0.90 0.15 92);
+    --yellow-9: oklch(0.86 0.155 90); --yellow-10: oklch(0.81 0.155 86); --yellow-11: oklch(0.52 0.11 75); --yellow-12: oklch(0.36 0.07 70);
+    --success: oklch(0.38 0.056 144); --success-bg: oklch(0.92 0.03 129); --danger: oklch(0.40 0.117 36); --danger-bg: oklch(0.92 0.03 41);
+    --wood-frame: oklch(0.50 0.06 55); --wood-ledge: oklch(0.72 0.08 65); --wood-lip: oklch(0.58 0.08 60);
+    --pin: oklch(0.58 0.16 28); --pin-lit: oklch(0.72 0.14 30);
+  }
+}
+
+/* ---------- Dark: same hue, lightness inverted, elevation by lightening, never #000 ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --paper-1: #1c1a16;   /* app background */
+  --paper-2: #24211c;
+  --paper-3: #2e2b25;   /* cards, keys, popovers (elevation 1) */
+  --paper-4: #39352d;   /* hover, elevation 2 */
+  --paper-5: #443f36;   /* active, elevation 3 */
+  --paper-6: #544f46;   /* subtle border */
+  --paper-7: #676359;   /* interactive border */
+  --paper-8: #7f7a70;   /* strong border (3:1) */
+  --paper-9: #9a9488;
+  --paper-10: #aaa497;
+  --paper-11: #bdb7a9;  /* secondary text (Lc 62) */
+  --paper-12: #ebe7df;  /* body text (Lc 91) */
+  --yellow-1: #2a2416;
+  --yellow-2: #3a3119;
+  --yellow-3: #4c3a13;  /* the sticky note, selected cards (light text Lc 84) */
+  --yellow-4: #574514;
+  --yellow-5: #62501a;
+  --yellow-9: #e3b53c;  /* primary (ink text) */
+  --yellow-10: #dba929;
+  --yellow-11: #e8c35c;
+  --yellow-12: #f3dc9a;
+  --success: #9fcc9d;     --success-bg: #2d3b2a;
+  --danger: #f1a996;      --danger-bg: #4a2c24;
+  --focus: var(--yellow-9);
+  --wood-frame: #5d402d;  --wood-ledge: #705034;  --wood-lip: #66452b;  /* the same wood in a dim room */
+  --pin: #cd6055;         --pin-lit: #ed8d7d;
+  --surface: var(--paper-3);
+  --edge: var(--paper-8);  /* a light 3 px ink outline would shout on a dark card */
+  --toast-bg: var(--paper-4); --toast-text: var(--paper-12); --toast-action: var(--yellow-11); --toast-edge: var(--paper-6); /* a raised surface, not an inversion */
+  --scrim: rgb(0 0 0 / .55);
+  --shadow-ink: #111009;  /* a darker edge, not pure black */
+  --pop-tint: 0 0 0;
+  --grain: none;
+}
+@supports (color: oklch(0 0 0)) {
+  html[data-theme="dark"] {
+    --paper-1: oklch(0.22 0.008 85); --paper-2: oklch(0.25 0.010 85); --paper-3: oklch(0.29 0.012 85); --paper-4: oklch(0.33 0.014 85);
+    --paper-5: oklch(0.37 0.016 85); --paper-6: oklch(0.43 0.016 85); --paper-7: oklch(0.50 0.016 85); --paper-8: oklch(0.58 0.016 85);
+    --paper-9: oklch(0.68 0.016 85); --paper-10: oklch(0.73 0.016 85); --paper-11: oklch(0.78 0.020 85); --paper-12: oklch(0.93 0.012 85);
+    --yellow-1: oklch(0.26 0.03 85); --yellow-2: oklch(0.31 0.05 85); --yellow-3: oklch(0.36 0.06 85); --yellow-4: oklch(0.40 0.07 88); --yellow-5: oklch(0.44 0.08 88);
+    --yellow-9: oklch(0.80 0.145 87); --yellow-10: oklch(0.76 0.145 85); --yellow-11: oklch(0.83 0.12 88); --yellow-12: oklch(0.90 0.08 90);
+    --success: oklch(0.80 0.08 144); --success-bg: oklch(0.31 0.03 140); --danger: oklch(0.80 0.09 36); --danger-bg: oklch(0.30 0.05 36);
+    --wood-frame: oklch(0.40 0.05 55); --wood-ledge: oklch(0.46 0.06 62); --wood-lip: oklch(0.42 0.06 58);
+    --pin: oklch(0.62 0.14 28); --pin-lit: oklch(0.74 0.12 30);
+  }
+}
+
+/* ---------- Roles: the names the stylesheets use, each one step of the ramps above ---------- */
+:root, html[data-theme="dark"] {
+  --paper: var(--paper-1);
+  --cream: var(--paper-2);
+  --tan: var(--paper-5);
+  --ink: var(--paper-12);
+  --ink-soft: var(--paper-11);
+  --yellow: var(--yellow-9);
+  --yellow-dark: var(--yellow-10);
+  --yellow-tint: var(--yellow-2);   /* hover on paper, your own card */
+  --yellow-pale: var(--yellow-3);   /* the sticky note, a selected chip */
+  --sage: var(--success-bg);
+  --sage-ink: var(--success);
+  --alert: var(--danger-bg);
+  --alert-ink: var(--danger);
+  --border: var(--paper-8);         /* edges of things you press or type in: 3:1 on the page */
+  --divider: var(--paper-6);        /* lines that only separate */
+  --line: 1.5px solid var(--border);
+  --outline: 3px solid var(--edge);  /* the sticker outline */
+  --on-accent: #262420;             /* ink on yellow, in both themes (yellow-9 always takes dark text) */
+  --on-canvas: #262420;             /* ink over the white canvas and drawings, in both themes */
+  --over-canvas: #fdfaf4;           /* light text on a dark control that sits over the canvas */
+  --picked: var(--yellow-3);        /* a selected tool, brush, or your own card */
+  --picked-edge: var(--yellow-10);
+  --soft-text: var(--paper-11);
+  --hover: var(--paper-4);
+  --raise: var(--shadow-sticker-sm);
+  --radius: var(--r-md);
+  --radius-big: var(--r-lg);
+
+  /* ---------- Type: two faces, eight sizes ---------- */
+  --font-ui: "Fredoka", "Trebuchet MS", sans-serif;
+  --font-hand: "Patrick Hand", "Trebuchet MS", sans-serif;
+  --font-logo: "Gochi Hand", "Patrick Hand", "Trebuchet MS", sans-serif;
+  --hand: var(--font-hand);
+  --marker: var(--font-logo);
+  --text-eyebrow: 700 12px/16px var(--font-ui);   /* caps, letter-spacing .08em */
+  --text-caption: 500 13px/18px var(--font-ui);
+  --text-label: 500 15px/22px var(--font-ui);
+  --text-label-strong: 700 15px/22px var(--font-ui);
+  --text-body: 500 17px/26px var(--font-ui);
+  --text-lead: 400 20px/28px var(--font-hand);
+  --text-title: 400 26px/32px var(--font-hand);
+  --text-page: 400 36px/40px var(--font-hand);
+  --text-display: 400 56px/56px var(--font-hand);
+  --track-caps: .08em;
+
+  /* ---------- Spacing ---------- */
+  --s-05: 2px; --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* ---------- Radius ---------- */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-pill: 999px; --r-round: 50%;
+
+  /* ---------- Shadow: light from the top-left, vertical = 2x horizontal ---------- */
+  --shadow-sticker-sm: 2px 4px 0 var(--shadow-ink);
+  --shadow-sticker-lg: 3px 6px 0 var(--shadow-ink);
+  --shadow-sticker-lift: 4px 8px 0 var(--shadow-ink); /* a large sticker lifted by translate(-1px, -2px): the shadow stays where it was */
+  --shadow-pressed: 1px 2px 0 var(--shadow-ink);
+  --shadow-pop: 0 1px 2px rgb(var(--pop-tint) / .08), 0 4px 8px rgb(var(--pop-tint) / .08), 0 12px 24px rgb(var(--pop-tint) / .10);
+
+  /* ---------- Motion ---------- */
+  --dur-fast: 100ms; --dur-base: 180ms; --dur-slow: 260ms;
+  --dur-fast-out: 75ms; --dur-base-out: 140ms; --dur-slow-out: 200ms;
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --ease-move: cubic-bezier(0.2, 0, 0, 1);
+}
+/* Dark mode: a popover is a lighter surface, not a shadow. */
+html[data-theme="dark"] { --shadow-pop: 0 0 0 1px var(--paper-6); }
+
+/* ---------- One focus ring everywhere ---------- */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- Reduced motion: movement becomes a 120 ms fade, the information stays ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root, html[data-theme="dark"] { --dur-fast: 120ms; --dur-base: 120ms; --dur-slow: 120ms; --dur-fast-out: 120ms; --dur-base-out: 120ms; --dur-slow-out: 120ms; }
+}

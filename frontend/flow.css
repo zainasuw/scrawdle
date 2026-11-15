@@ -1,0 +1,346 @@
+/* The home, reveal, finish, and gallery screens, plus the workspace layout. */
+/* Two typefaces: Fredoka for every interface word, Patrick Hand for headings and handwriting (tokens.css). */
+html,body{background:var(--paper);font:var(--text-body)}
+button,input,select,output{font:var(--text-label)}
+:not(#game *).wordmark{-webkit-text-stroke:0;font-size:36px!important}
+.pencil-mark{display:none}
+.letters i{transform:none!important}
+h1{font:var(--text-page);margin:0}
+.eyebrow{font:var(--text-eyebrow);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--ink-soft)}
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:0;min-height:52px}
+.app-header .quiet{text-decoration:none}
+.btn{border-radius:var(--r-sm);min-height:46px;padding:0 24px;background:var(--surface)}
+.btn.primary{background:var(--yellow)}
+.quiet{min-height:44px;text-underline-offset:4px}
+.round-btn{box-shadow:none;background:transparent;border-color:var(--border)}
+#setup{padding:24px 32px;min-height:100dvh;justify-content:flex-start;gap:0;text-align:left}
+#setup .app-header{max-width:1320px}
+.home-body{width:min(600px,100%);margin:auto;padding:48px 0;text-align:center}
+.home-body h1{margin:12px 0 32px}
+#continue-list{width:100%;margin:0 0 24px}
+.continue{background:var(--yellow-tint);border-color:var(--picked-edge);padding:16px;gap:16px}
+.continue b{font:var(--text-label)}
+.continue small{font:var(--text-caption);margin-top:4px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.home-choice{padding:24px 24px;background:var(--surface);border:var(--line);border-radius:var(--r-md);text-align:left;gap:0}
+.home-choice h2{font:var(--text-title);margin:0}
+.home-choice p{font:var(--text-caption);color:var(--ink-soft);margin:12px 0 24px;flex:1}
+.home-choice .btn{padding:0 12px;width:100%}
+#my-drawings{margin:24px auto 0;color:var(--ink-soft)}
+.home-storage{font:var(--text-caption);color:var(--ink-soft);margin:8px 0 0}
+#setup.has-saved .home-actions{grid-template-columns:1fr}
+#setup.has-saved .home-choice{flex-direction:row;align-items:center;flex-wrap:wrap;column-gap:16px;padding:16px 24px}
+#setup.has-saved .home-choice h2{font:var(--text-lead)}
+#setup.has-saved .home-choice p{margin:8px 0}
+#setup.has-saved .home-choice .btn{width:auto}
+#slot{background:var(--paper)}
+.slot-top{padding:24px 32px}
+.slot-body{padding:24px 24px 64px;gap:24px}
+.reveal-heading{margin:0 0 12px}
+#reels{--row:72px;width:min(760px,100%);gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.reel{position:relative;background:var(--surface);border:var(--line);border-radius:var(--r-sm);height:calc(var(--row)*3)}
+.reel:after{content:"";position:absolute;left:0;right:0;top:var(--row);height:var(--row);border-block:1px solid var(--yellow-10);pointer-events:none}
+.strip span{font:var(--text-title);padding:0 12px;white-space:normal;opacity:.25}
+.strip .chosen{opacity:1}
+#slot-sentence{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#slot-start{min-height:48px;min-width:180px}
+#game{display:grid;grid-template-columns:minmax(0,1fr) 260px;grid-template-areas:"header header" "stage settings" "tools tools" "footer footer";align-content:center;align-items:stretch;gap:16px;max-width:1380px;min-height:100dvh;height:auto;padding:24px 32px}
+.game-top{grid-area:header;display:grid;grid-template-columns:1fr auto;row-gap:12px}
+.game-top .wm-slot{grid-column:1;grid-row:1}
+#back-home{grid-column:2;grid-row:1;text-decoration:none}
+.top-prompt{grid-column:1/-1;grid-row:2;justify-content:center;gap:16px;padding:2px 0 8px}
+#restart{grid-column:2;grid-row:2;justify-self:end;max-width:100px}
+#prompt-label{font:var(--text-eyebrow);text-transform:uppercase;letter-spacing:var(--track-caps);color:var(--ink-soft);margin-bottom:4px}
+#prompt-text{font:var(--text-lead)}
+#prompt-bar{max-width:min(800px,70vw)}
+#stage{grid-area:stage;display:flex;align-items:center;justify-content:center;min-width:0;container-type:normal}
+#board{width:100%;height:auto;aspect-ratio:3/2;max-width:1050px;border-radius:var(--r-sm);border:1px solid var(--divider);background:var(--canvas);box-shadow:none}
+#brush-settings{grid-area:settings;align-self:stretch;display:flex;flex-direction:column;gap:16px;padding:24px 16px;background:var(--surface);border:var(--line);border-radius:var(--r-sm);min-width:0}
+.settings-title{font:var(--text-label-strong);margin:0}
+.brush-controls{width:100%;align-self:stretch}
+.brush-toggle{width:100%;text-align:left;background:var(--yellow-tint);border-radius:var(--r-sm)}
+.brush-panel{position:static;width:100%;padding:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:0;box-shadow:none;background:none}
+.brush-choice{background:var(--surface);border:1px solid var(--divider);padding:8px 4px;min-height:70px;border-radius:var(--r-sm);font:var(--text-caption)}
+.brush-choice[aria-pressed="true"]{background:var(--picked);border:1px solid var(--picked-edge)}
+.brush-choice canvas{height:30px;margin-bottom:4px}
+#brush-settings .tray-sizes{border-left:0;border-top:var(--line);padding:16px 0 0;width:100%;gap:12px;margin-top:auto;flex-direction:column;align-items:stretch;flex:none}
+.size-value{text-align:left;font:var(--text-caption);font-variant-numeric:tabular-nums}
+.size-value:before{content:"Size · "}
+.size-top{justify-content:flex-start}
+#tool-size{accent-color:var(--yellow-10);min-height:44px}
+#tools{display:contents}
+.tray{grid-area:tools;display:flex;flex-direction:row;justify-content:space-between;gap:24px;padding:8px 16px;border-radius:var(--r-md);background:var(--surface);flex-wrap:nowrap}
+.tray-tools{flex:1;justify-content:space-around;gap:4px;min-width:0}
+.tray-tools .tool{width:72px;min-height:86px}
+.tool[aria-pressed="true"],.tool[aria-pressed="true"]:hover{background:var(--picked);border-color:var(--picked-edge);box-shadow:none}
+.tray-colors{border-left:var(--line);padding-left:24px;gap:24px;flex:none}
+.swatches{grid-template-columns:repeat(6,44px);gap:8px}
+.swatch{border:5px solid var(--surface);width:44px;height:44px}
+.swatch[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:-2px}
+.studio-footer{grid-area:footer;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+.history-actions{grid-column:1;grid-row:1;justify-self:start;gap:8px}
+.history-actions .tool{border:var(--line);min-height:44px;padding:0 8px;background:var(--surface);border-radius:var(--r-sm)}
+.history-actions .tool-label{font:var(--text-caption)}
+:not(#game *).save-status{grid-column:2;grid-row:1;justify-self:center;border-radius:0;font:var(--text-caption);background:none!important;color:var(--ink-soft)!important;white-space:normal;text-align:center}
+.save-status:before{display:none}
+.done{grid-column:3;grid-row:1;justify-self:end;min-width:158px;min-height:46px}
+/* The Scrawdle name goes home from every other screen. */
+.wordmark[data-home]{cursor:pointer}
+.wordmark[data-home]:hover{opacity:.75}
+.wordmark[data-home]:focus-visible{outline-offset:4px;border-radius:var(--r-sm)}
+#gallery{width:100vw;max-width:none;height:100dvh;margin:0;border:0;border-radius:0;background:var(--paper);padding:24px 32px 32px}
+#gallery .app-header{max-width:1320px;margin:0 auto 24px}
+.gallery-heading{text-align:center;margin:24px auto}
+#gallery h2{font:var(--text-page);margin:8px 0 12px}
+.gallery-note{font:var(--text-label);text-align:center;margin:0 auto 24px;max-width:600px}
+.gallery-grid{max-width:960px;margin:auto;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.gallery-grid li{background:var(--surface);padding:0;transform:none!important;border:var(--line);border-radius:var(--r-sm);overflow:hidden}
+.gallery-grid li.mine{background:var(--yellow-tint)}
+.gallery-grid img{object-fit:contain;aspect-ratio:3/2;border-radius:0}
+.gallery-grid p{font:var(--text-caption);margin:12px;text-align:left;color:var(--ink-soft)}
+/* Votes: thumbs up or down on other players' drawings, and your result on your own. */
+.vote-bar{display:flex;gap:8px;margin:0 12px 12px}
+.vote{flex:1;min-height:44px;border:var(--line);border-radius:var(--r-sm);background:var(--surface);font:var(--text-lead);color:var(--ink);cursor:pointer}
+.vote:hover{background:var(--hover)}
+.vote[aria-pressed="true"]{background:var(--sage);color:var(--sage-ink)}
+.vote:last-child[aria-pressed="true"]{background:var(--alert);color:var(--alert-ink)}
+.vote:disabled{cursor:progress;opacity:.7}
+.gallery-grid p.vote-result{margin-top:-8px;font:var(--text-lead);color:var(--ink)}
+.gallery-grid p.vote-result.won{color:var(--sage-ink)}
+.gallery-sub{margin:8px 0 0;font:var(--text-label);text-align:center;color:var(--ink-soft)}
+/* Loading: the words show at once; a 24 px ring joins them after a second, so a quick load never flashes one. */
+.gallery-note.loading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:44px}
+.gallery-note.loading::before{content:"";flex:none;width:24px;height:24px;border:3px solid var(--divider);border-top-color:var(--ink);border-radius:50%;opacity:0;animation:spin 900ms linear infinite,appear 0s linear 1s both}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes appear{to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.gallery-note.loading::before{animation:appear 0s linear 1s both}} /* the ring holds still */
+html[data-theme="dark"] .gallery-sub{color:var(--ink-soft)}
+/* Likes: a small heart in the top corner of a drawing card (votes.js draws it). An outline you can press, red once
+   liked, with how many players like it. Your own drawing and the leaderboard show the same heart and number. */
+.gallery-grid li,.party-grid li{position:relative}
+.like,.gallery-grid .like-count{position:absolute;top:8px;right:8px}
+.like,.like-count{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 8px;border:var(--line);border-radius:var(--r-pill);background:var(--cream);color:var(--ink);font:var(--text-label-strong);font-variant-numeric:tabular-nums;box-shadow:var(--shadow-sticker-sm)}
+.like{min-width:44px;min-height:44px;justify-content:center;cursor:pointer;transition:transform var(--dur-fast) var(--ease-move),box-shadow var(--dur-fast) var(--ease-move)}
+.like:hover{transform:translate(-1px,-2px);box-shadow:var(--shadow-sticker-lg)}
+.like:active{transform:translate(1px,2px);box-shadow:var(--shadow-pressed)}
+.like:disabled{cursor:progress}
+.lb-votes .like-count,.yesterday-votes .like-count{min-height:0;padding:0;border:0;background:none;box-shadow:none;font:inherit}
+.heart{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.heart.filled{fill:var(--yellow-9);stroke:var(--on-canvas)} /* liked: filled in the one accent, never red */
+.like[aria-pressed="true"] .heart{animation:heart-pop var(--dur-slow) var(--ease-move)}
+@keyframes heart-pop{40%{transform:scale(1.35)}}
+@media(prefers-reduced-motion:reduce){.like{transition:none}.like:hover,.like:active{transform:none}.like[aria-pressed="true"] .heart{animation:none}}
+.gallery-grid .report{min-height:44px;margin:0 8px 8px;font:var(--text-caption);color:var(--ink-soft)}
+@media(min-width:1000px){.brush-toggle{display:none}}
+@media(max-width:1100px) and (min-width:1000px){.tray-tools .tool{width:60px}.tray-colors{gap:12px;padding-left:12px}}
+@media(max-width:999px){
+ #game{grid-template-columns:1fr;grid-template-areas:"header" "stage" "tools" "settings" "footer";max-width:1000px;padding:16px 24px}
+ #brush-settings{padding:12px 16px;display:grid;grid-template-columns:auto 1fr;gap:8px 24px}
+ .settings-title{align-self:center;grid-column:1;grid-row:1}
+ #brush-settings .tray-sizes{grid-column:2;grid-row:1;margin:0;padding:0;border:0;display:flex;flex-direction:row;align-items:center;gap:16px}
+ .size-top{display:none}.size-value{min-width:70px}
+ .brush-controls{grid-column:1/-1;grid-row:2}
+ .brush-panel{margin-top:8px;grid-template-columns:repeat(4,minmax(0,1fr))}
+ .tray{gap:8px;flex-wrap:wrap}.tray-tools{min-width:100%}.tray-colors{border:0;padding:0;justify-content:center;flex:1}
+ .tray-tools .tool{min-height:75px;width:65px}.art-tool{height:48px;width:48px}
+ /* Size and Opacity each get their own line, with the slider beside its label, so nothing runs past the
+    edge of a phone (which made phones zoom the whole drawing screen out) */
+ #brush-settings{grid-template-columns:fit-content(40%) minmax(0,1fr)}
+ #brush-settings .tray-sizes{min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px 12px}
+ #brush-settings .tool-opacity{display:contents}
+ #brush-settings .tray-sizes input[type="range"]{width:100%;min-width:0}
+}
+@media(max-width:640px){
+ #setup,#gallery{padding:12px 16px 24px}.app-header{min-height:42px}:not(#game *).wordmark{font-size:26px!important}
+ .home-body{padding:32px 0;margin:auto}.home-body h1{margin-bottom:24px}.home-actions{grid-template-columns:1fr}.home-choice{padding:24px}.home-choice p{margin:8px 0 16px}
+ .slot-top{padding:12px 16px!important}.slot-body{padding:24px 16px 64px;gap:16px}#reels{grid-template-columns:1fr;--row:56px;gap:8px;max-width:350px}.reel{height:var(--row)}.reel:after{top:0}.strip span{font:var(--text-lead)}
+ #game{padding:12px;gap:12px;align-content:start}.game-top{grid-template-columns:1fr auto;row-gap:8px}.game-top .wm-slot{grid-column:1;justify-self:start}#back-home{grid-column:2;min-height:44px}#restart{position:static;grid-column:2;grid-row:3;max-width:none}.top-prompt{padding:4px 0;gap:8px}#prompt-bar{max-width:calc(100vw - 75px)}#help-btn{width:30px;height:30px}
+ .tray{padding:8px 4px;gap:12px}.tray-tools{gap:0}.tray-tools .tool{width:calc(100% / 6);min-height:71px}.art-tool{width:42px;height:42px}.tray-colors{gap:16px}.wheel{width:44px;height:44px}
+ #brush-settings{padding:8px 12px;column-gap:12px}#brush-settings .tray-sizes{gap:8px}.size-value{min-width:67px}.brush-panel{grid-template-columns:repeat(3,minmax(0,1fr))}.brush-choice{min-height:68px}
+ .studio-footer{grid-template-columns:1fr auto;gap:8px}.history-actions{grid-column:1/-1;grid-row:1;justify-self:center;order:initial;width:auto}.history-actions .tool{padding:0 12px}.save-status{grid-column:1;grid-row:2;justify-self:start;order:initial;padding:0;max-width:150px}.done{grid-column:2;grid-row:2;order:initial;min-width:128px;margin:0}
+ .gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.gallery-grid p{margin:8px}.gallery-heading{margin-top:24px}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.strip{will-change:auto}}
+/* Keep the whole desktop work area reachable without hiding its controls. */
+#setup .home-body h1{font:var(--text-page);margin:12px 0 32px}
+@media(min-width:1000px){
+ #game{max-width:min(1380px,calc((100dvh - 390px)*1.5 + 340px))}
+ #brush-settings{align-self:start}
+ #brush-settings .tray-sizes{margin-top:8px}
+}
+@media(max-width:640px){#setup .home-body h1{margin-bottom:24px}}
+@media(min-width:1000px) and (max-height:780px){#game{max-width:1100px}}
+
+@media(max-width:640px){#setup.has-saved .home-choice{flex-direction:column;align-items:stretch;gap:8px}#setup.has-saved .home-choice .btn{width:100%}#setup.has-saved .home-choice p{margin:0 0 8px}}
+
+/* Basic and Detailed: three choices on the home screen, and one reel for each part. */
+.home-body{width:min(860px,100%)}
+.home-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+#setup.has-saved .home-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+#setup.has-saved .home-choice{flex-direction:column;align-items:stretch;padding:24px}
+#setup.has-saved .home-choice .btn{width:100%}
+#slot{overflow:auto}
+#reels{--row:54px;width:min(820px,100%);grid-template-columns:repeat(3,minmax(0,1fr))}
+.reel-part{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left}
+.reel-label{font:var(--text-caption);color:var(--ink-soft)}
+.reel-part.optional .reel-label{color:var(--sage-ink)}
+.reel{height:var(--row)}
+.reel:after{top:0}
+
+/* The parts stay above the canvas. Optional ones say so, in words as well as color. */
+#prompt-bar{max-width:min(1040px,90vw)}
+#prompt-text{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 16px;font:var(--text-lead)}
+.part small{margin-right:4px;font:var(--text-caption);color:var(--ink-soft)}
+.part.optional small{color:var(--sage-ink)}
+
+@media(max-width:800px){.home-actions,#setup.has-saved .home-actions{grid-template-columns:1fr}}
+@media(max-width:640px){
+ #reels{--row:50px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}
+ .reel:after{top:0}
+ .strip span{padding:0 8px}
+ .slot-body{justify-content:flex-start}
+ #prompt-text{gap:2px 12px}
+ #prompt-bar{max-width:calc(100vw - 70px)}
+}
+
+/* New challenge or New set sits beside Back to home, so it never lands on the parts or the help button. */
+.game-top{grid-template-columns:1fr auto auto;column-gap:8px}
+#restart{grid-column:2;grid-row:1;justify-self:end;max-width:none;margin:0;text-decoration:none}
+#back-home{grid-column:3}
+.top-prompt{grid-column:1/-1}
+@media(max-width:640px){
+ .game-top{grid-template-columns:1fr auto auto;column-gap:2px}
+ #restart,#back-home{grid-row:1;padding:0 8px}
+ #restart{grid-column:2}
+ #back-home{grid-column:3}
+ #back-home svg{display:none}
+}
+
+/* The reveal covers the whole screen, so the game underneath can't scroll into view. */
+html:has(#slot:not([hidden])){overflow:hidden}
+
+/* Laptop screens: smaller tools and tighter rows leave the room for the canvas. */
+@media(min-width:1000px) and (max-height:920px){
+ #game{gap:8px;padding:8px 32px;max-width:min(1380px,calc((100dvh - 336px)*1.5 + 340px));min-width:min(100%,920px)}
+ .game-top{row-gap:2px}
+ #prompt-text{gap:0 16px}
+ .top-prompt{padding:0 0 2px}
+ .tray{padding:4px 12px}
+ .tray-tools .tool{min-height:62px;width:62px;gap:1px}
+ .art-tool{width:38px;height:38px}
+ .custom-color{gap:4px}
+ .history-actions .tool{min-height:38px}
+ .done{min-height:40px}
+ #brush-settings{padding:12px;gap:8px}
+ .brush-choice{min-height:46px;padding:4px 4px}
+ .brush-choice canvas{height:22px;margin-bottom:2px}
+ #brush-settings .tray-sizes{padding-top:8px;gap:4px;margin-top:0}
+ /* Small, Medium and Large share the "Size" row instead of taking their own, so the panel stays as short as before */
+ #brush-settings .tray-sizes{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px}
+ #brush-settings .size-value{grid-column:1;grid-row:1}
+ #brush-settings .size-top{grid-column:2;grid-row:1;justify-content:flex-end;min-width:0}
+ #brush-settings .tray-sizes>input[type="range"],#brush-settings .tool-opacity{grid-column:1/-1}
+ #brush-settings .size-dot{height:24px}
+ #brush-settings .stroke-preview svg{height:24px}
+ #brush-settings .tray-sizes{padding-top:4px}
+}
+
+/* The streak (streak.js): under the date on the home screen, and under the parts on the finish screen. */
+.home-streak{display:inline-block;margin:8px auto 0;padding:4px 12px;border:var(--line);border-radius:var(--r-pill);background:var(--cream);color:var(--ink);font:var(--text-lead)}
+.home-streak[hidden],.finish-streak[hidden]{display:none}
+.finish-next,#home-next,.home-next,.gallery-grid p,.lobby-vote-text,.lobby-count,.party-round,.party-card-votes,.party-scores .points,.yesterday-votes,.lb-info{font-variant-numeric:tabular-nums}
+
+/* Time Challenge (index.html): the clock beside the parts, the 3-2-1 over the canvas, the time choices on the reveal, and the finish line. */
+.challenge-timer{flex:none;min-width:70px;padding:4px 12px;border:var(--line);border-radius:var(--r-sm);background:var(--cream);font:var(--text-title);text-align:center;font-variant-numeric:tabular-nums;color:var(--ink)}
+.challenge-timer.hurry{background:var(--alert);color:var(--alert-ink)}
+.challenge-timer[hidden]{display:none}
+#stage{position:relative}
+.challenge-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font:var(--text-display);font-size:clamp(56px,14vw,150px);line-height:1;color:var(--ink);text-shadow:0 2px 0 var(--paper),0 0 18px var(--paper);animation:challenge-pop var(--dur-slow) var(--ease-enter)}
+.challenge-count[hidden]{display:none}
+@keyframes challenge-pop{from{transform:scale(1.4);opacity:0}to{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.challenge-count{animation:fade-in var(--dur-base) linear}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.challenge-times{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.challenge-times[hidden]{display:none}
+.challenge-times .chip{min-height:44px;padding:0 16px;border:var(--line);border-radius:var(--r-sm);background:var(--cream);font:var(--text-lead);color:var(--ink);cursor:pointer}
+.challenge-times .chip[aria-pressed="true"]{background:var(--picked);border-color:var(--picked-edge);color:var(--ink)}
+.finish-timed[hidden]{display:none}
+
+/* ---------- One control style on every paper page: the home page's chunky keys (the arcade screen keeps its own) ---------- */
+.btn{border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-sm);background:var(--surface);color:var(--ink);font:var(--text-label-strong);min-height:46px;padding:0 24px;transition:transform var(--dur-fast) var(--ease-move),box-shadow var(--dur-fast) var(--ease-move),background var(--dur-fast) var(--ease-move)}
+.btn:hover:not(:disabled){background:var(--yellow-tint);transform:translate(-1px,-2px);box-shadow:var(--shadow-sticker-lg)}
+.btn:active:not(:disabled){transform:translate(1px,2px);box-shadow:var(--shadow-pressed)}
+.btn.primary{background:var(--yellow);color:var(--on-accent)}
+.btn.primary:hover:not(:disabled){background:var(--yellow-10);color:var(--on-accent)}
+.btn:disabled{opacity:.55}
+.btn.big{min-height:54px;font-size:17px;padding:0 24px}
+.app-header .quiet,.party-bar .quiet,.slot-top .quiet{min-height:44px;padding:0 16px;border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-sm);background:var(--surface);font:var(--text-label-strong);text-decoration:none;color:var(--ink)}
+.app-header .quiet:hover,.party-bar .quiet:hover,.slot-top .quiet:hover{background:var(--yellow-tint);transform:translate(-1px,-2px);box-shadow:var(--shadow-sticker-lg)}
+.quiet{font:var(--text-label)}
+.round-btn{width:44px;height:44px;border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-sm);background:var(--surface);font:700 20px/1 var(--font-ui);color:var(--ink)}
+.round-btn:hover{background:var(--yellow-tint)}
+.lobby-join input,.lobby-name input,.lobby-link,.join-row input{border:2.5px solid var(--edge);border-radius:var(--r-sm);background:var(--surface)}
+.bubble{border:2.5px solid var(--edge);background:var(--surface);font:var(--text-label-strong);color:var(--ink)}
+.bubble[aria-pressed="true"]{background:var(--yellow);color:var(--on-accent)}
+.gallery-grid li{border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-lg)}
+/* The reveal's reels in the same style, and the rows that lose readable while they spin. */
+.reel{background:var(--surface);border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-lg)}
+.reel:after{border-block:2px solid var(--yellow-4)}
+.strip span{opacity:.45}
+.reel-label{font:var(--text-caption);color:var(--ink-soft)}
+/* Back to home on the finish screen, the reveal, Public drawings and the leaderboard: a small house key, no words (the name is the tooltip and what a screen reader says). */
+.home-key{width:44px;height:44px;min-height:44px;padding:0;justify-content:center;border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-sm);background:var(--surface);color:var(--ink)}
+.home-key:not(.chalk-icon) svg,.app-header .home-key:not(.chalk-icon) svg,.slot-top .home-key:not(.chalk-icon) svg{display:block;width:22px!important;height:22px!important;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- The finish screen: the drawing big and clear, the words and buttons beside it ---------- */
+/* On a laptop the drawing takes at least 60% of the window's width (more when the height allows) with the replay
+   control under it, never on it; the date, the heading, the parts and the buttons stand in a column beside it. On a
+   phone everything stacks and the drawing runs edge to edge. One primary button (Publish; Download when there is
+   nothing to publish), two secondary, two quiet links. After Publish the buttons give way to one line, the streak or
+   the parts, and one button to the gallery (.finish-published), faded in over 180 ms. */
+#finish{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:24px 32px 32px;border:0;border-radius:0;box-shadow:none;background:var(--paper) var(--grain);overflow:auto}
+#finish[open]{display:flex;flex-direction:column;align-items:center;gap:16px}
+#finish .app-header{max-width:1320px}
+.finish-body{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center;align-items:center;gap:24px;width:100%;margin:auto 0}
+.finish-art-col{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:1200px}
+.finish-art{position:relative;width:100%;padding:0;background:var(--surface);border:3px solid var(--edge);border-radius:var(--r-md);box-shadow:var(--shadow-sticker-lg);overflow:hidden;transform:none}
+.finish-art img,.finish-art canvas{display:block;width:100%;height:auto;aspect-ratio:3/2;background:var(--canvas);mix-blend-mode:normal}
+.finish-under{display:flex;justify-content:center;width:100%;min-height:44px}
+.finish-under[hidden]{display:none}
+.replay-btn{gap:8px;color:var(--ink)}
+.replay-btn svg{width:22px;height:22px;flex:none;fill:currentColor;stroke:none}
+.replay-btn:disabled{text-decoration:none;color:var(--ink-soft);cursor:default}
+.finish-side{display:flex;flex-direction:column;align-items:center;gap:8px;width:min(600px,100%);text-align:center}
+.finish-heading{margin:0;text-align:center}
+.finish-heading h1{margin:0;font:var(--text-page)}
+.finish-date{margin:0 0 8px;color:var(--ink-soft)} /* 12 px, the eyebrow size: never smaller */
+.finish-prompt{margin:8px 0 0;font:var(--text-lead)}
+.finish-streak,.finish-timed{margin:8px 0 0;font:var(--text-lead);color:var(--ink)}
+.finish-next{margin:8px 0 0;font:var(--text-label);color:var(--ink-soft)}
+.finish-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:8px}
+.finish-actions .btn{min-width:170px}
+.finish-actions[hidden],.finish-secondary[hidden],.finish-published[hidden]{display:none}
+.publish-disclosure{margin:0;font:var(--text-caption);color:var(--ink-soft);text-align:center}
+.finish-note{margin:0;font:var(--text-label)}
+.finish-note:empty{display:none}
+.finish-secondary{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px}
+.finish-published{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:8px;opacity:0;transition:opacity var(--dur-base) var(--ease-enter)}
+.finish-published.in{opacity:1}
+.finish-published-title{margin:0;font:var(--text-title)}
+.finish-published-line{margin:0;font:var(--text-lead);color:var(--ink-soft)}
+@media(min-width:820px) and (min-aspect-ratio:4/3){
+ .finish-body{grid-template-columns:minmax(0,auto) minmax(280px,1fr);justify-items:start;align-items:start;gap:40px}
+ .finish-art-col{width:clamp(45vw,(100dvh - 150px) * 1.5,64vw);max-width:none} /* as wide as the height allows, up to 64% of the window: 60% or more on every laptop size tried (1280 x 720 to 1920 x 1080); a phone on its side gets 45% so the whole screen is still one screen */
+ .finish-side,.finish-heading{align-items:flex-start;text-align:left}
+ .finish-side{width:100%;max-width:600px;padding-top:clamp(0px,8vh,72px)} /* pinned near the top, so the column doesn't jump when the buttons give way to the Published line */
+ .finish-actions,.finish-secondary,.finish-under{justify-content:flex-start}
+ .finish-published{align-items:flex-start}
+ .publish-disclosure{text-align:left}
+}
+@media(max-width:640px){
+ #finish{padding:12px 16px 24px}
+ .finish-art-col{width:calc(100% + 32px)} /* full width on a phone: edge to edge */
+ .finish-art{border-left:0;border-right:0;border-radius:0}
+ .finish-actions{width:100%}
+ .finish-actions .btn{flex:1 1 40%;min-width:0;padding:0 16px}
+}

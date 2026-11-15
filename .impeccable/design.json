@@ -1,0 +1,697 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-15T22:03:20+00:00",
+  "title": "Design System: Scrawdle",
+  "extensions": {
+    "colorMeta": {
+      "night": {
+        "role": "neutral",
+        "displayName": "Studio Night",
+        "canonical": "#0B0926",
+        "tonalRamp": [
+          "#090A16",
+          "#222336",
+          "#3E3F59",
+          "#5C5E7E",
+          "#7C7FA5",
+          "#9FA2C4",
+          "#C4C7E5",
+          "#EBEDFF"
+        ]
+      },
+      "navy": {
+        "role": "neutral",
+        "displayName": "Stage Navy",
+        "canonical": "#141038",
+        "tonalRamp": [
+          "#09091A",
+          "#22223B",
+          "#3D3E5F",
+          "#5B5D86",
+          "#7B7DAE",
+          "#9EA1CD",
+          "#C3C6EC",
+          "#EBEDFF"
+        ]
+      },
+      "violet": {
+        "role": "neutral",
+        "displayName": "Set Violet",
+        "canonical": "#2B1C63",
+        "tonalRamp": [
+          "#0A0621",
+          "#231E46",
+          "#3F396E",
+          "#5D5799",
+          "#7D76C5",
+          "#A09BE2",
+          "#C4C2FC",
+          "#EDEDFC"
+        ]
+      },
+      "plum": {
+        "role": "neutral",
+        "displayName": "Curtain Plum",
+        "canonical": "#43207A",
+        "tonalRamp": [
+          "#0F0324",
+          "#2A194A",
+          "#483373",
+          "#684FA0",
+          "#8B6ECD",
+          "#AC94E9",
+          "#CEBEFD",
+          "#EFEBFE"
+        ]
+      },
+      "bezel": {
+        "role": "neutral",
+        "displayName": "Bezel",
+        "canonical": "#120C35",
+        "tonalRamp": [
+          "#09091A",
+          "#22223B",
+          "#3E3E5F",
+          "#5C5C86",
+          "#7C7DAF",
+          "#9FA0CE",
+          "#C4C5ED",
+          "#ECEDFC"
+        ]
+      },
+      "key-violet": {
+        "role": "neutral",
+        "displayName": "Key Violet",
+        "canonical": "#4A35A8",
+        "tonalRamp": [
+          "#0B012C",
+          "#221755",
+          "#3D3283",
+          "#5B4FB3",
+          "#7A6EE4",
+          "#9C96FF",
+          "#C3C2FD",
+          "#ECEDFE"
+        ]
+      },
+      "key-base": {
+        "role": "neutral",
+        "displayName": "Key Base",
+        "canonical": "#1A1150",
+        "tonalRamp": [
+          "#080720",
+          "#202044",
+          "#3B3C6C",
+          "#585A96",
+          "#777AC1",
+          "#9A9EDF",
+          "#BFC4FC",
+          "#EBEDFF"
+        ]
+      },
+      "gold": {
+        "role": "primary",
+        "displayName": "Marquee Gold",
+        "canonical": "#FFC23D",
+        "tonalRamp": [
+          "#140800",
+          "#322200",
+          "#563D03",
+          "#7D5A00",
+          "#A77A00",
+          "#CE9C2D",
+          "#EEC26F",
+          "#FEECCB"
+        ]
+      },
+      "gold-edge": {
+        "role": "primary",
+        "displayName": "Gold Edge",
+        "canonical": "#9A5B12",
+        "tonalRamp": [
+          "#190500",
+          "#3A1C00",
+          "#613602",
+          "#895319",
+          "#B27230",
+          "#D19762",
+          "#F1BE91",
+          "#FDEBDC"
+        ]
+      },
+      "buzzer-base": {
+        "role": "primary",
+        "displayName": "Buzzer Base",
+        "canonical": "#6E3E0A",
+        "tonalRamp": [
+          "#170600",
+          "#381E05",
+          "#5C3919",
+          "#82562F",
+          "#A97548",
+          "#C99A73",
+          "#E9C09E",
+          "#FDEBDC"
+        ]
+      },
+      "bulb": {
+        "role": "primary",
+        "displayName": "Bulb Glow",
+        "canonical": "#FFE7A6",
+        "tonalRamp": [
+          "#120A00",
+          "#2F2401",
+          "#4F4014",
+          "#725F2A",
+          "#968042",
+          "#B7A36F",
+          "#D9C89B",
+          "#FCEEC8"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Cream",
+        "canonical": "#FFF4DE",
+        "tonalRamp": [
+          "#0E0B05",
+          "#29241B",
+          "#484134",
+          "#686050",
+          "#8B816E",
+          "#ADA492",
+          "#D0C8B9",
+          "#F4EEE1"
+        ]
+      },
+      "tile-edge": {
+        "role": "neutral",
+        "displayName": "Tile Edge",
+        "canonical": "#B9945A",
+        "tonalRamp": [
+          "#150800",
+          "#332101",
+          "#553D14",
+          "#795B2A",
+          "#9F7C42",
+          "#BF9F6F",
+          "#E1C59B",
+          "#FFECD0"
+        ]
+      },
+      "magenta": {
+        "role": "secondary",
+        "displayName": "Applause Magenta",
+        "canonical": "#F2358A",
+        "tonalRamp": [
+          "#20000A",
+          "#4A0024",
+          "#7C0040",
+          "#B1005E",
+          "#E3257F",
+          "#FE6AA2",
+          "#FEAFC7",
+          "#FEE8EE"
+        ]
+      },
+      "applause": {
+        "role": "secondary",
+        "displayName": "Applause Deep",
+        "canonical": "#B8135E",
+        "tonalRamp": [
+          "#210009",
+          "#4B0021",
+          "#7A083C",
+          "#A9235A",
+          "#D93E79",
+          "#F8719D",
+          "#FDB0C4",
+          "#FCE9ED"
+        ]
+      },
+      "teal": {
+        "role": "tertiary",
+        "displayName": "Go Teal",
+        "canonical": "#1ED3C2",
+        "tonalRamp": [
+          "#000F0D",
+          "#002C28",
+          "#064D46",
+          "#007167",
+          "#17968A",
+          "#34BCAE",
+          "#79DED1",
+          "#BAFEF4"
+        ]
+      },
+      "teal-edge": {
+        "role": "tertiary",
+        "displayName": "Teal Edge",
+        "canonical": "#0E7F74",
+        "tonalRamp": [
+          "#00100D",
+          "#012C28",
+          "#094D46",
+          "#177066",
+          "#329489",
+          "#68B6AB",
+          "#97D8CE",
+          "#C6FBF3"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1B1240",
+        "tonalRamp": [
+          "#0A081B",
+          "#23213C",
+          "#403D61",
+          "#5E5B89",
+          "#7E7BB2",
+          "#A19FD0",
+          "#C6C4EF",
+          "#EDECFF"
+        ]
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Lilac Text",
+        "canonical": "#C9BEF0",
+        "tonalRamp": [
+          "#0C0818",
+          "#262138",
+          "#443C5B",
+          "#635A81",
+          "#857AA8",
+          "#A79EC8",
+          "#CBC3E8",
+          "#EFEBFF"
+        ]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Danger",
+        "canonical": "#FF6B6B",
+        "tonalRamp": [
+          "#210001",
+          "#4E0008",
+          "#7A151D",
+          "#A92E34",
+          "#D9494D",
+          "#F77976",
+          "#FDB3AF",
+          "#FDE9E8"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "contestant-4": {
+        "role": "contestant",
+        "displayName": "Contestant Lilac",
+        "canonical": "#8E7BFF",
+        "tonalRamp": [
+          "#0C002E",
+          "#251458",
+          "#402F87",
+          "#5E4BB8",
+          "#7E6AEB",
+          "#9F94FF",
+          "#C5C2FD",
+          "#EDEDFD"
+        ]
+      },
+      "contestant-5": {
+        "role": "contestant",
+        "displayName": "Contestant Orange",
+        "canonical": "#FF8A3D",
+        "tonalRamp": [
+          "#1D0200",
+          "#3F1800",
+          "#6A2F01",
+          "#974707",
+          "#C9610C",
+          "#EB884A",
+          "#FFB68D",
+          "#FCEAE1"
+        ]
+      },
+      "contestant-6": {
+        "role": "contestant",
+        "displayName": "Contestant Green",
+        "canonical": "#6FE36F",
+        "tonalRamp": [
+          "#001100",
+          "#002F01",
+          "#005108",
+          "#057613",
+          "#1E9D28",
+          "#5EBE5E",
+          "#91E08E",
+          "#CCFECA"
+        ]
+      },
+      "contestant-7": {
+        "role": "contestant",
+        "displayName": "Contestant Sky",
+        "canonical": "#4FB4FF",
+        "tonalRamp": [
+          "#000C1E",
+          "#002743",
+          "#03466F",
+          "#0366A0",
+          "#1989D0",
+          "#5AADEC",
+          "#9AD0FC",
+          "#E1F1FE"
+        ]
+      },
+      "contestant-8": {
+        "role": "contestant",
+        "displayName": "Contestant Pink",
+        "canonical": "#FF9ECF",
+        "tonalRamp": [
+          "#1C000F",
+          "#3F112B",
+          "#65294A",
+          "#8F436C",
+          "#B9608F",
+          "#D988B0",
+          "#F8B1D3",
+          "#FDE8F1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Show Display",
+        "purpose": "Big titles and the buzzers (Shrikhand); 34px phone, 3.4u TV."
+      },
+      "logo": {
+        "displayName": "Show Logo",
+        "purpose": "The Scrawdle! wordmark: gold, rotated -3deg, stacked warm shadow, magenta '!'."
+      },
+      "board": {
+        "displayName": "Scoreboard",
+        "purpose": "Flip tiles, scores, timers and codes (Big Shoulders Display 900, tabular numerals); tile letters scale 22 to 92px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Panel names, the phone scoreboard word, the finish word."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default running text."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Instructions on the pad (max 32ch) and TV (1.6u, max 40ch)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sub-lines, help and status; floors are 12px on phones and 1.05u on TV."
+      },
+      "button": {
+        "displayName": "Key Label",
+        "purpose": "The gold key's lettering; violet keys use 800 18px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "panel",
+        "value": "inset 0 0 0 2px rgb(255 255 255 / .08), 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 0 rgb(255 255 255 / .06) inset",
+        "purpose": "Every dark panel."
+      },
+      {
+        "name": "gold-ring",
+        "value": "inset 0 0 0 2px rgb(255 194 61 / .5)",
+        "purpose": "Lit-edge panels: phone scoreboard, toast, popovers, menu-panel hover."
+      },
+      {
+        "name": "key-base",
+        "value": "0 5px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2)",
+        "purpose": "Violet keys at rest; pressed is 0 1px 0 with a 3 to 4px travel."
+      },
+      {
+        "name": "gold-key",
+        "value": "0 6px 0 #9A5B12, 0 14px 26px -6px rgb(0 0 0 / .55), inset 0 2px 0 rgb(255 255 255 / .55)",
+        "purpose": "The one main action."
+      },
+      {
+        "name": "buzzer",
+        "value": "0 6px 0 #6E3E0A, 0 12px 24px rgb(0 0 0 / .45), inset 0 -6px 10px rgb(150 80 0 / .28)",
+        "purpose": "Done! and Host buzzers."
+      },
+      {
+        "name": "tile",
+        "value": "0 .07em 0 #B9945A, 0 .12em .2em rgb(0 0 0 / .45), inset 0 1px 0 #fff",
+        "purpose": "Cream flip tiles and plates (scaled to the tile)."
+      },
+      {
+        "name": "gold-glow",
+        "value": "0 0 0 2px rgb(255 194 61 / .35), 0 0 22px rgb(255 194 61 / .35)",
+        "purpose": "Lit things: bulbs, the leader, the selected card or colour."
+      },
+      {
+        "name": "logo-stack",
+        "value": "text-shadow: 0 .04em 0 #C2541D, 0 .08em 0 #7A1F4E, 0 .14em .25em rgb(0 0 0 / .5)",
+        "purpose": "The Shrikhand wordmark's stacked marquee shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.2, .8, .2, 1)",
+        "purpose": "Key travel, panels rising on, state changes."
+      },
+      {
+        "name": "ease-bounce",
+        "value": "cubic-bezier(.34, 1.56, .64, 1)",
+        "purpose": "Pops: the logo landing, colour dots, ticks."
+      },
+      {
+        "name": "fast",
+        "value": "140ms",
+        "purpose": "Key press and hover."
+      },
+      {
+        "name": "base",
+        "value": "240ms",
+        "purpose": "Small pops and tile hovers."
+      },
+      {
+        "name": "slow",
+        "value": "520ms",
+        "purpose": "Screens and panels rising on (staggered 80ms apart)."
+      },
+      {
+        "name": "tile-flip",
+        "value": "460ms cubic-bezier(.4, 1.5, .5, 1), 55ms stagger",
+        "purpose": "Word tiles flipping onto the board."
+      },
+      {
+        "name": "marquee-chase",
+        "value": "solo: 3.2s, one step per 1.6s; party TV: 3.6s, one step per 1.2s",
+        "purpose": "The only bulb chase, on the marquee word board."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "fast/base/slow = 0ms; animations off",
+        "purpose": "Bulbs show lit and still; confetti lies where it lands."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-wide",
+        "value": "430px"
+      },
+      {
+        "name": "small-tablet",
+        "value": "640px"
+      },
+      {
+        "name": "tablet",
+        "value": "760px"
+      },
+      {
+        "name": "laptop",
+        "value": "900px"
+      },
+      {
+        "name": "tv-set",
+        "value": "1000px and min-aspect-ratio 5/4"
+      },
+      {
+        "name": "big-tv",
+        "value": "1600px"
+      },
+      {
+        "name": "short-phone",
+        "value": "max-height 720px"
+      },
+      {
+        "name": "tv-unit",
+        "value": "--u: min(1vw, 100vh / 56.25)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Gold Key",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a screen (Join, Start, See the scores, Play again).",
+      "html": "<button class=\"ds-gold-key\">See the scores</button>",
+      "css": ".ds-gold-key { display: inline-flex; align-items: center; justify-content: center; min-height: 60px; padding: 0 28px; border: 0; border-radius: 18px; background: linear-gradient(180deg, #FFD467, #FFB81F); color: #1B1240; font: 800 22px/1 \"Bricolage Grotesque\", system-ui, sans-serif; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 0 #9A5B12, 0 14px 26px -6px rgb(0 0 0 / .55), inset 0 2px 0 rgb(255 255 255 / .55); transition: transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms cubic-bezier(.2,.8,.2,1), background 140ms; } .ds-gold-key:hover { background: linear-gradient(180deg, #FFE08A, #FFC23D); } .ds-gold-key:active { transform: translateY(4px); box-shadow: 0 2px 0 #9A5B12, 0 6px 12px -4px rgb(0 0 0 / .5), inset 0 2px 0 rgb(255 255 255 / .45); } .ds-gold-key:focus-visible { outline: 4px solid #FFC23D; outline-offset: 3px; }"
+    },
+    {
+      "name": "Violet Key",
+      "kind": "button",
+      "refersTo": "button-key",
+      "description": "Every secondary action: a violet key on its base edge.",
+      "html": "<button class=\"ds-key\">Play again</button>",
+      "css": ".ds-key { min-height: 52px; padding: 0 22px; border: 0; border-radius: 16px; background: linear-gradient(180deg, #4A35A8, #3A2890); color: #FFF4DE; font: 800 18px \"Bricolage Grotesque\", system-ui, sans-serif; cursor: pointer; box-shadow: 0 5px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2); transition: transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms cubic-bezier(.2,.8,.2,1); } .ds-key:hover { background: linear-gradient(180deg, #5640B8, #43309C); } .ds-key:active { transform: translateY(4px); box-shadow: 0 1px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2); } .ds-key:focus-visible { outline: 3px solid #FFC23D; outline-offset: 3px; }"
+    },
+    {
+      "name": "Done! Buzzer",
+      "kind": "custom",
+      "refersTo": "buzzer-done",
+      "description": "The phone pad's giant domed gold buzzer; unlit violet until something is drawn.",
+      "html": "<button class=\"ds-buzzer\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 12.5l5 5L20 6.5\"/></svg>Done!</button>",
+      "css": ".ds-buzzer { position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; width: 280px; height: 84px; padding: 0 12px; border: 7px solid transparent; border-radius: 50px; background: radial-gradient(ellipse 80% 70% at 50% 22%, #FFE39A, #FFC23D 52%, #E59A0E) padding-box, linear-gradient(180deg, #FFE7A6, #C9861A) border-box; color: #1B1240; font: 400 30px/1 Shrikhand, \"Big Shoulders Display\", serif; text-shadow: 0 2px 0 rgb(255 255 255 / .45); cursor: pointer; box-shadow: 0 6px 0 #6E3E0A, 0 12px 24px rgb(0 0 0 / .45), inset 0 -6px 10px rgb(150 80 0 / .28); transition: transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms cubic-bezier(.2,.8,.2,1); } .ds-buzzer::after { content: \"\"; position: absolute; left: 14%; top: 5px; width: 28%; height: 9px; border-radius: 50%; background: rgb(255 255 255 / .45); pointer-events: none; } .ds-buzzer:hover { filter: brightness(1.05) saturate(1.05); } .ds-buzzer:active { transform: translateY(5px); box-shadow: 0 1px 0 #6E3E0A, 0 6px 12px rgb(0 0 0 / .4), inset 0 -3px 10px rgb(150 80 0 / .28); } .ds-buzzer:focus-visible { outline: 3px solid #FFC23D; outline-offset: 3px; }"
+    },
+    {
+      "name": "Tool Key",
+      "kind": "button",
+      "refersTo": "tool-key",
+      "description": "Chunky drawing-tool keys; the tool in your hand is pressed in and lit gold.",
+      "html": "<div class=\"ds-tools\"><button class=\"ds-tool\" aria-pressed=\"true\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20l1-5L16 4l4 4L9 19z\"/></svg>Pen</button><button class=\"ds-tool\" aria-pressed=\"false\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 20h12M5 15l8-8 6 6-6 6H9z\"/></svg>Eraser</button></div>",
+      "css": ".ds-tools { display: flex; gap: 7px; padding: 12px; background: #24176A; border-radius: 20px; } .ds-tool { position: relative; top: -2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 72px; height: 60px; border: 0; border-radius: 15px; background: linear-gradient(180deg, #4A35A8, #3A2890); color: #FFF4DE; font: 700 12px/1 \"Bricolage Grotesque\", system-ui, sans-serif; cursor: pointer; box-shadow: 0 5px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2); transition: top 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms cubic-bezier(.2,.8,.2,1); } .ds-tool:hover:not([aria-pressed=\"true\"]) { background: linear-gradient(180deg, #5640B8, #43309C); } .ds-tool:active:not([aria-pressed=\"true\"]) { top: 2px; box-shadow: 0 1px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2); } .ds-tool[aria-pressed=\"true\"] { top: 2px; background: linear-gradient(180deg, #FFD467, #FFB81F); color: #1B1240; box-shadow: 0 1px 0 #9A5B12, inset 0 2px 4px rgb(120 60 0 / .35), 0 6px 14px -4px rgb(255 194 61 / .55); } .ds-tool:focus-visible { outline: 3px solid #FFC23D; outline-offset: 3px; }"
+    },
+    {
+      "name": "Room Code Slot",
+      "kind": "input",
+      "refersTo": "code-slot",
+      "description": "Join a game: teal letters on a split flip-board tile.",
+      "html": "<input class=\"ds-code\" maxlength=\"4\" placeholder=\"CODE\" aria-label=\"Room code\">",
+      "css": ".ds-code { width: 240px; height: 60px; padding: 0 10px; border: 0; border-radius: 12px; background: linear-gradient(180deg, #2A2160 50%, #221A52 50%); box-shadow: inset 0 -2px 0 rgb(0 0 0 / .35), inset 0 0 0 2px rgb(30 211 194 / .35); color: #1ED3C2; font: 900 40px/1 \"Big Shoulders Display\", sans-serif; letter-spacing: .34em; text-indent: .34em; text-align: center; text-transform: uppercase; caret-color: #FFC23D; } .ds-code::placeholder { color: #A99CE0; opacity: 1; letter-spacing: .2em; font-size: 30px; } .ds-code:hover { box-shadow: inset 0 -2px 0 rgb(0 0 0 / .35), inset 0 0 0 2px rgb(30 211 194 / .6); } .ds-code:focus-visible, .ds-code:focus { outline: none; box-shadow: inset 0 -2px 0 rgb(0 0 0 / .35), inset 0 0 0 2px #1ED3C2, 0 0 0 4px rgb(30 211 194 / .25); }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Every dark container on the set; menu panels lift and take the gold ring on hover.",
+      "html": "<button class=\"ds-panel\"><span class=\"ds-panel-name\">Quick draw</span><span class=\"ds-panel-text\">Roll the die and draw what it says.</span></button>",
+      "css": ".ds-panel { display: grid; gap: 4px; width: 260px; min-height: 132px; align-content: end; padding: 14px; border: 0; border-radius: 22px; background: linear-gradient(180deg, #1E1650, #120C38); color: #FFF4DE; text-align: left; cursor: pointer; box-shadow: inset 0 0 0 2px rgb(255 255 255 / .08), 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 0 rgb(255 255 255 / .06) inset; transition: transform 140ms cubic-bezier(.2,.8,.2,1), box-shadow 140ms cubic-bezier(.2,.8,.2,1); } .ds-panel:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 2px rgb(255 194 61 / .55), 0 18px 40px -12px rgb(0 0 0 / .6); } .ds-panel:active { transform: translateY(1px); } .ds-panel:focus-visible { outline: 3px solid #FFC23D; outline-offset: 3px; } .ds-panel-name { font: 800 21px/1.05 \"Bricolage Grotesque\", system-ui, sans-serif; } .ds-panel-text { font: 600 14px/1.3 \"Bricolage Grotesque\", system-ui, sans-serif; color: #C9BEF0; }"
+    },
+    {
+      "name": "Flip Tiles",
+      "kind": "custom",
+      "refersTo": "flip-tile",
+      "description": "The word on cream flip tiles; the phrase's last word is magenta.",
+      "html": "<div class=\"ds-tiles\"><span class=\"ds-tile\">P</span><span class=\"ds-tile\">I</span><span class=\"ds-tile\">A</span><span class=\"ds-tile\">N</span><span class=\"ds-tile ds-hot\">O</span></div>",
+      "css": ".ds-tiles { display: inline-flex; gap: 6px; padding: 18px; border-radius: 24px; background: radial-gradient(ellipse at 50% 0%, #1E1652, #0D0A2A 75%); perspective: 600px; } .ds-tile { position: relative; display: grid; place-items: center; width: 52px; height: 68px; border-radius: 6px; background: linear-gradient(180deg, #FFF8E8 0 49.4%, #F1E2C2 50.6% 100%); box-shadow: 0 4px 0 #B9945A, 0 6px 10px rgb(0 0 0 / .45), inset 0 1px 0 #fff; color: #1B1240; font: 900 58px/1 \"Big Shoulders Display\", sans-serif; animation: ds-flip 460ms cubic-bezier(.4,1.5,.5,1) both; } .ds-tile::after { content: \"\"; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: rgb(27 18 64 / .3); } .ds-tile.ds-hot { color: #D81B72; } .ds-tile:nth-child(2) { animation-delay: 55ms; } .ds-tile:nth-child(3) { animation-delay: 110ms; } .ds-tile:nth-child(4) { animation-delay: 165ms; } .ds-tile:nth-child(5) { animation-delay: 220ms; } @keyframes ds-flip { from { transform: rotateX(-90deg); opacity: 0; } } @media (prefers-reduced-motion: reduce) { .ds-tile { animation: none; } }"
+    },
+    {
+      "name": "Category Chip",
+      "kind": "chip",
+      "refersTo": "category-chip",
+      "description": "The die's call: the category's face on a cream disc, white lettering on Applause Deep.",
+      "html": "<span class=\"ds-cat\"><span class=\"ds-cat-ico\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"#F2358A\" stroke=\"#1B1240\" stroke-width=\"1.6\" stroke-linejoin=\"round\"><path d=\"M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z\"/></svg></span>Thing</span>",
+      "css": ".ds-cat { display: inline-flex; align-items: center; gap: 8px; padding: 3px 14px 3px 3px; border-radius: 999px; background: #B8135E; color: #fff; font: 800 14px \"Bricolage Grotesque\", system-ui, sans-serif; letter-spacing: .02em; white-space: nowrap; box-shadow: 0 3px 0 #7A1043; } .ds-cat-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #FFF4DE; }"
+    },
+    {
+      "name": "Clock",
+      "kind": "custom",
+      "description": "A teal dial for time; magenta and pulsing in the last ten seconds.",
+      "html": "<div class=\"ds-clock\"><span>42</span></div><div class=\"ds-clock ds-hurry\"><span>8</span></div>",
+      "css": ".ds-clock { --ring: #1ED3C2; display: inline-grid; place-items: center; width: 96px; height: 96px; margin: 8px; border-radius: 50%; background: radial-gradient(circle, #1A1347 0 58%, #120C38 70%); box-shadow: inset 0 0 0 7px var(--ring), 0 0 27px color-mix(in srgb, var(--ring) 55%, transparent); color: var(--ring); font: 900 40px/1 \"Big Shoulders Display\", sans-serif; font-variant-numeric: tabular-nums; } .ds-clock.ds-hurry { --ring: #F2358A; animation: ds-pulse 1s cubic-bezier(.2,.8,.2,1) infinite; } @keyframes ds-pulse { 50% { transform: scale(1.06); } } @media (prefers-reduced-motion: reduce) { .ds-clock.ds-hurry { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Saturday-Night Studio",
+    "overview": "**Creative North Star: \"The Saturday-Night Studio\"**\n\nScrawdle is a family game show taped on a Saturday night. The TV is the set: a deep night-violet studio lit from above, a faint fluted back wall, a glossy floor that throws back a warm pool of light, a gold marquee board whose bulbs chase slowly round the word, cream flip tiles that turn over letter by letter, and contestant podiums with lit name panels along the bottom. Every phone is a contestant's buzzer pad: a chunky violet slab with two screws, a little scoreboard on top, the white canvas in a dark bezel, round colour buttons, chunky keys that press in, and one giant domed gold Done! buzzer.\n\nThe system is classy-fun, never casino. Energy comes from real colour on a dark set, physical keys that travel when pressed, and big moments set in Shrikhand; restraint comes from colours that each have one job, a single chase on the whole set, and a quiet, legible grotesque for everything people read. It refuses both the quiet grey app (rejected twice in this project's history as boring) and the tacky casino.\n\nThe studio is always night. There is no light theme; the theme toggle is hidden on home.",
+    "keyCharacteristics": [
+      "Night-violet set under a soft stage light (`--bg-stage`), with a fluted back wall that fades out above the floor.",
+      "One slow bulb chase, on the marquee word board only.",
+      "Gold is the one main action, the bulbs and the leader; magenta is the category and applause; teal is time and go; violet keys are everything else.",
+      "Physical keys: every key stands on a solid base edge and travels down into it when pressed.",
+      "Cream flip tiles, split across the middle, for the word, the room code's cousins and the scoreboard numbers.",
+      "The drawing canvas is white, square-cornered, in a dark bezel, and the largest thing on a phone.",
+      "TV screens scale as one picture in `--u` units; phones keep text at 12px or more."
+    ],
+    "rules": [
+      {
+        "name": "The One Gold Rule",
+        "body": "One gold key or buzzer per screen. Gold also lights the bulbs and the leader; it never decorates a secondary action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Jobs Rule",
+        "body": "Magenta is the category and applause, teal is time and go, gold is the act and the lead. A colour that has a job is not borrowed for another.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-on-Light Rule",
+        "body": "Text on gold, cream and teal is Ink; text on the dark set is Cream or Lilac Text; white lettering on magenta sits on Applause Deep.",
+        "section": "colors"
+      },
+      {
+        "name": "The Host Rule",
+        "body": "Shrikhand is for the logo, big titles and the buzzers only; it never sets a label, a list or a paragraph.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scoreboard Rule",
+        "body": "Anything counted or keyed in (tiles, scores, timers, codes) is Big Shoulders Display with tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Unbroken Word Rule",
+        "body": "A word never breaks across tile rows; rows are chosen by the game, never wrapped by chance. Compound pairs stay together. W and M are narrowed horizontally (scaleX .8 to .9), never shortened.",
+        "section": "typography"
+      },
+      {
+        "name": "The Press-In Rule",
+        "body": "Keys stand on a solid base edge directly below them and travel down into it on press; the tool in your hand stays pressed in and lit gold. The base is the key's own thickness, straight down, never a sideways offset.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Untouched Canvas Rule",
+        "body": "Never put filter, mask or clip-path on the drawing canvas or any ancestor of it. Bezels, glows and the pad are backgrounds, borders, box-shadows and pseudo-elements beside it.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do give every screen exactly one gold action, and make every other key violet.",
+      "Do keep text on gold, cream and teal in Ink (#1B1240), and set white lettering on magenta only on Applause Deep (#B8135E).",
+      "Do size TV screens in `--u` so the whole set scales as one picture; keep TV text at 1.05u or more and phone text at 12px or more.",
+      "Do make keys physical: a solid base straight below, a short travel on press (3 to 6px) at 140ms with `cubic-bezier(.2, .8, .2, 1)`.",
+      "Do keep the drawing canvas white and the largest thing on a phone, in its dark bezel.",
+      "Do set counted and keyed things (tiles, scores, timers, codes) in Big Shoulders Display with tabular numerals.",
+      "Do honour reduced motion: the duration tokens drop to 0ms, animations stop, the bulbs show lit and still, and confetti lies where it would have landed."
+    ],
+    "donts": [
+      "Don't chase bulbs anywhere but the marquee word board, and never faster than one step every 1.2s; every other bulb row holds still. That restraint is what keeps the set classy, not casino.",
+      "Don't put filter, mask or clip-path on the drawing canvas or anything that holds it.",
+      "Don't set labels, lists or paragraphs in Shrikhand.",
+      "Don't borrow a colour outside its job: no teal actions that aren't time or go, no magenta that isn't the category or applause, no gold on secondary keys.",
+      "Don't add a light theme or a grey, low-colour screen; the studio is always night.",
+      "Don't put a small label above a title; a supporting line goes under it.",
+      "Don't break a word or a compound pair across tile rows."
+    ]
+  }
+}

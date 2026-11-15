@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public drawings · Scrawdle</title>
+  <meta name="theme-color" content="#0B0926" />
+  <link rel="preload" href="../fonts/shrikhand.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../fonts/big-shoulders-display.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- tokens.css in a lower layer (older pieces still read it); the TV game-show look is stage.css (tokens and fonts),
+       then pages.css, shared with the other page. Paths start with ../ so they work with or without a trailing slash.
+       The show is always the night studio, so there is no light/dark switch here. -->
+  <style>
+    @layer legacy;
+    @import url("../tokens.css") layer(legacy);
+  </style>
+  <link rel="stylesheet" href="../stage.css" />
+  <link rel="stylesheet" href="../pages.css" />
+</head>
+<body>
+
+  <!-- The Public drawings page. gallery.js draws it into this element (see createGallery's container option),
+       so it is the same page the home screen's dialog used to show, now at its own address.
+       The link on the home screen is shown only when the Supabase project is connected. -->
+  <div id="page"></div>
+  <p style="margin:0 0 32px;text-align:center"><a class="quiet" href="../leaderboard/">See today's leaderboard</a></p>
+  <noscript><p style="padding:24px;text-align:center">Public drawings needs JavaScript.</p></noscript>
+
+  <script src="../votes.js"></script>
+  <script src="../gallery.js"></script>
+  <!-- Supabase's client from its CDN, the project's keys, then publish.js, which sets window.scrawdlePublicGallery,
+       window.scrawdleVote, window.scrawdleReport and window.scrawdleHasPosted. Same order as the home screen. -->
+  <script src="../vendor/supabase.js"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="../publish.js"></script>
+  <script>
+    (() => {
+      // Links from a finished drawing still carry ?focus=…; with only Daily Word drawings there's nothing to pick, so it's ignored.
+      const gallery = ScrawdleGallery.createGallery(null, { container: document.getElementById("page") });
+      if (typeof window.scrawdlePublicGallery !== "function") {
+        document.getElementById("gallery-title").textContent = "Public drawings";
+        document.querySelector(".gallery-note").textContent = "Public drawings isn't connected on this copy of the game.";
+      } else {
+        gallery.showPublic();
+      }
+    })();
+  </script>
+</body>
+</html>

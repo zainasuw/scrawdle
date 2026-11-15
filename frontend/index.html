@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scrawdle</title>
+  <meta name="theme-color" content="#0B0926" />
+  <!-- The saved light/dark choice is still read (older pieces look at it), but the show is always the night studio. -->
+  <script>try { if (localStorage.getItem("scrawdle-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (err) {}</script>
+  <link rel="preload" href="fonts/shrikhand.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/big-shoulders-display.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- Older sheets, in a lower layer: tokens.css (still read by a few older pieces) and the colour picker's own
+       sheet. The rest of the old looks are no longer loaded: every screen draws itself in the sheets below. -->
+  <style>
+    @layer legacy;
+    @import url("tokens.css") layer(legacy);
+    @import url("color-picker.css") layer(legacy);
+  </style>
+  <link rel="stylesheet" href="stage.css" />
+  <link rel="stylesheet" href="dice.css" />
+  <link rel="stylesheet" href="game.css" />
+  <link rel="stylesheet" href="screens.css" />
+  <link rel="stylesheet" href="social.css" />
+</head>
+<body>
+  <!-- The six die faces, drawn once: ink outlines, one style (used on the scoreboard, the category tag and the
+       stand-in die when dice.js is missing). -->
+  <svg class="cat-defs" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="cat-Animal" viewBox="0 0 48 48"><g fill="#1B1240"><ellipse cx="24" cy="31" rx="9.5" ry="8"/><ellipse cx="12.5" cy="21" rx="4" ry="5" transform="rotate(-20 12.5 21)"/><ellipse cx="19.5" cy="13" rx="4" ry="5"/><ellipse cx="28.5" cy="13" rx="4" ry="5"/><ellipse cx="35.5" cy="21" rx="4" ry="5" transform="rotate(20 35.5 21)"/></g></symbol>
+      <symbol id="cat-Food" viewBox="0 0 48 48"><g stroke="#1B1240" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M24 16c-6-4-15-1-15 9 0 9 7 15 11 15 2 0 3-1 4-1s2 1 4 1c4 0 11-6 11-15 0-10-9-13-15-9z" fill="#FF6F61"/><path d="M24 16c0-3 1-6 3-8" fill="none"/><path d="M27 12c3-3 7-3 9-1-2 3-6 3-9 1z" fill="#9BE04A"/></g><path d="M15 23c1-2 2-3 4-3.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" fill="none"/></symbol>
+      <symbol id="cat-Silly" viewBox="0 0 48 48"><circle cx="24" cy="24" r="16" fill="#FFD23F" stroke="#1B1240" stroke-width="3"/><circle cx="18" cy="21" r="2.6" fill="#1B1240"/><path d="M26.5 21q3.5-3.5 7 0M15.5 28q8.5 8 17 0" stroke="#1B1240" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M22 31.5q2.6 7 5.6 0" fill="#FF4F9A" stroke="#1B1240" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+      <symbol id="cat-Place" viewBox="0 0 48 48"><g stroke="#1B1240" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M10 23L24 10l14 13v15H10z" fill="#2FB2FF"/><path d="M7 25L24 9l17 16" fill="none"/><path d="M20 38v-9h8v9" fill="#FFD23F"/></g></symbol>
+      <symbol id="cat-Thing" viewBox="0 0 48 48"><g stroke="#1B1240" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><rect x="10" y="21" width="28" height="18" rx="2" fill="#9BE04A"/><rect x="8" y="15" width="32" height="7" rx="2" fill="#9BE04A"/><path d="M24 15v24" fill="none"/><path d="M24 15c-3-6-10-7-9-2 1 2 5 3 9 2zM24 15c3-6 10-7 9-2-1 2-5 3-9 2z" fill="#FF4F9A"/></g></symbol>
+      <symbol id="cat-Wild" viewBox="0 0 48 48"><path d="M24 6l5 11.5 12.5 1.2-9.5 8.3 2.8 12.3L24 33l-10.8 6.3 2.8-12.3-9.5-8.3L19 17.5z" fill="#FF8A1F" stroke="#1B1240" stroke-width="3" stroke-linejoin="round"/><path d="M19.5 22.5l1 .2" stroke="#fff" stroke-width="3" stroke-linecap="round"/></symbol>
+    </defs>
+  </svg>
+
+  <template id="wordmark">
+    <span class="wordmark" role="img" aria-label="Scrawdle">Scrawdle</span>
+  </template>
+
+  <dialog id="help" aria-labelledby="help-title">
+    <button class="close" type="button" aria-label="Close" title="Close"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="help-title">How to play</h2>
+    <p class="help-lead">Roll the die, get a word, draw it. That's Scrawdle.</p>
+    <h3>A party, in the same room</h3>
+    <ol>
+      <li>On a TV or laptop, press <strong>Host a game</strong>. It shows a short code of letters.</li>
+      <li>Everyone opens Scrawdle on their phone, taps <strong>Join a game</strong>, and types the code and their name.</li>
+      <li>The die rolls a category, then the word. Everyone draws it on their phone before the clock runs out.</li>
+      <li>The drawings show on the big screen with no names. Tap your favourite on your phone (not your own).</li>
+      <li>Each vote is 100 points, and the round's top drawing gets 50 more. After the last round, the winner takes the top spot.</li>
+    </ol>
+    <h3>On your own</h3>
+    <p><strong>Daily Word</strong> is one word a day, the same for everyone. Draw it, then publish it to today's gallery, where people like their favourites and the leaderboard ranks them.</p>
+    <p><strong>Quick draw</strong> rolls a random word whenever you like.</p>
+    <p class="help-small">Your drawing saves in this browser as you go. Undo is Ctrl+Z (Cmd+Z on a Mac). Today's drawings leave the gallery at midnight.</p>
+  </dialog>
+
+  <!-- A yes/no question in the game's own box, only for what can't be undone (Discard, Delete, Kick): never the browser's grey confirm. -->
+  <dialog id="ask-box" class="ask-box" aria-labelledby="ask-title" aria-describedby="ask-body">
+    <h2 id="ask-title"></h2>
+    <p id="ask-body"></p>
+    <div class="ask-actions"><button type="button" class="btn primary" value="yes"></button><button type="button" class="quiet" value="no"></button></div>
+  </dialog>
+
+  <!-- Leaving a drawing: keep it (saving is automatic; it goes to My drawings) or discard it. Esc, or a tap outside, keeps drawing. -->
+  <dialog id="leave-drawing" aria-labelledby="leave-title" aria-describedby="leave-note">
+    <canvas class="leave-thumb" width="300" height="200" aria-hidden="true"></canvas>
+    <h2 id="leave-title">Leave your drawing?</h2>
+    <p id="leave-note">It's kept in My drawings, so nothing is lost.</p>
+    <div class="leave-actions">
+      <button class="btn primary" type="button" data-leave="save">Keep it</button>
+      <button class="quiet leave-delete" type="button" data-leave="delete">Discard</button>
+    </div>
+  </dialog>
+
+  <!-- Home: the show's title card. The Scrawdle! logo; the one gold buzzer, Host a game; Join a game with the code
+       of letters; then the two ways to play alone (Daily Word, its word hidden on flip tiles, and Quick draw) and the links. -->
+  <main id="setup">
+    <header class="home-top">
+      <h1 class="home-logo"><span class="logo-mark">Scrawdle</span></h1>
+      <div class="home-keys">
+        <button class="help-open icon-key" type="button" aria-label="How to play" title="How to play"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M11.5 12.2c.4-2.8 2.4-4.4 4.8-4.4 2.6 0 4.6 1.8 4.6 4.1 0 2.6-2.6 3.3-3.9 4.6-.7.7-.9 1.6-.9 2.8"/><circle cx="16.1" cy="24.2" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+        <button class="icon-key" id="theme-toggle" type="button" aria-pressed="false" title="Dark mode"><svg class="i-moon" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M20.5 5.5c-6.4 1-10.4 6.6-9.6 12.6.8 5.8 6.2 9.8 12 8.8 1.6-.3 3-.9 4.2-1.8-7 0-11.4-5.4-10.6-11.6.4-3.2 2-6 4-8z"/></svg><svg class="i-sun" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><circle cx="16" cy="16" r="5.6"/><path d="M16 3.6v3.3M16 25.1v3.3M3.6 16h3.3M25.1 16h3.3M7.2 7.2l2.3 2.3M22.5 22.5l2.3 2.3M7.2 24.8l2.3-2.3M22.5 9.5l2.3-2.3"/></svg><span class="sr-only theme-label">Dark mode</span></button>
+      </div>
+    </header>
+    <p class="home-tag">Roll the die. Draw the word. Vote for the best one.</p>
+    <div id="continue-list" hidden></div><!-- kept for older code; home shows no "Continue drawing" notices -->
+
+    <section class="home-party" aria-label="Play with friends">
+      <button class="host-buzzer" id="multiplayer" type="button">
+        <svg class="host-art" viewBox="0 0 96 72" aria-hidden="true">
+          <rect x="5" y="5" width="62" height="42" rx="8" fill="#1B1240"/>
+          <g fill="#FFF4DE"><rect x="14" y="17" width="12" height="16" rx="2.5"/><rect x="30" y="17" width="12" height="16" rx="2.5"/><rect x="46" y="17" width="12" height="16" rx="2.5"/></g>
+          <path d="M14 25h12M30 25h12M46 25h12" stroke="#1B1240" stroke-opacity=".3" stroke-width="1.2"/>
+          <g fill="#FFE7A6"><circle cx="12" cy="11" r="1.8"/><circle cx="20" cy="11" r="1.8"/><circle cx="28" cy="11" r="1.8"/><circle cx="36" cy="11" r="1.8"/><circle cx="44" cy="11" r="1.8"/><circle cx="52" cy="11" r="1.8"/><circle cx="60" cy="11" r="1.8"/></g>
+          <path d="M28 55h16M36 47v8" stroke="#1B1240" stroke-width="3.6" stroke-linecap="round"/>
+          <rect x="57" y="30" width="22" height="37" rx="5.5" fill="#F2358A" stroke="#1B1240" stroke-width="3.4"/>
+          <rect x="61.5" y="35" width="13" height="20" rx="2" fill="#FFF4DE"/>
+          <rect x="74" y="21" width="19" height="32" rx="5" fill="#1ED3C2" stroke="#1B1240" stroke-width="3.4"/>
+          <rect x="78" y="26" width="11" height="16" rx="2" fill="#FFF4DE"/>
+        </svg>
+        <span class="host-text"><span class="host-name">Host a game</span><span class="host-sub">Put Scrawdle on a TV or laptop. Friends join on their phones.</span></span>
+        <svg class="host-go" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M7 16h17M17 8.5l7.5 7.5-7.5 7.5"/></svg>
+      </button>
+      <form class="join-panel" id="join-form" autocomplete="off" novalidate>
+        <label for="join-code" class="join-label">Join a game</label>
+        <div class="join-row">
+          <input id="join-code" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="5" pattern="[A-Za-z]{4,5}" placeholder="CODE" aria-describedby="join-help">
+          <button class="join-btn" type="submit">Join</button>
+        </div>
+        <p id="join-help" class="join-help" role="status">The letters on the big screen.</p>
+      </form>
+      <div id="multiplayer-error"></div>
+    </section>
+
+    <section class="home-solo" aria-label="Play on your own">
+      <!-- Today's word stays hidden on blank flip tiles until it's rolled; once today's drawing is done, the word shows. -->
+      <button class="daily-card" id="mode-daily" type="button">
+        <span class="daily-tiles" aria-hidden="true"><i>?</i><i>?</i><i>?</i></span>
+        <span class="menu-name">Daily Word</span>
+        <span class="menu-text" id="daily-text">Roll today's word</span>
+      </button>
+      <button class="quick-card" id="free-play" type="button">
+        <svg class="quick-die" viewBox="0 0 48 48" aria-hidden="true"><g transform="rotate(-10 24 24)"><rect x="7" y="7" width="34" height="34" rx="10" fill="#FFF4DE" stroke="#1B1240" stroke-width="3"/><path d="M12 36.5c4 2 20 2 24 0" stroke="#E6C084" stroke-width="3" stroke-linecap="round" fill="none"/><g fill="#1B1240"><circle cx="16.5" cy="16.5" r="3.3"/><circle cx="24" cy="24" r="3.3"/><circle cx="31.5" cy="31.5" r="3.3"/></g></g></svg>
+        <span class="menu-name">Quick draw</span>
+        <span class="menu-text">A random word, any time</span>
+      </button>
+      <p class="home-streak" id="home-streak" hidden></p>
+      <p class="home-next" id="home-next" hidden></p>
+      <p id="setup-error" role="alert" hidden></p>
+    </section>
+
+    <nav class="home-links" aria-label="Pages">
+      <a class="link-chip" id="public-drawings" href="public-drawings/" hidden><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M4 16.5l5-5 4 4 2.5-2.5 4.5 4.5"/><circle cx="16" cy="9" r="1.6"/></svg><span>Public drawings</span></a>
+      <a class="link-chip" id="leaderboard-link" href="leaderboard/" hidden><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 20V11h8v9M3 20v-6h5M16 20v-4h5M2 20h20"/></svg><span>Leaderboard</span></a>
+      <button class="link-chip" id="my-drawings" type="button"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg><span>My drawings</span></button>
+    </nav>
+  </main>
+
+  <!-- The reveal: the die tumbles onto the lit stage table, lands on a category, then the word flips onto cream
+       tiles inside the gold marquee board. -->
+  <div id="slot" hidden>
+    <header class="slot-top">
+      <span class="wm-slot"></span>
+      <span class="slot-nav"><button class="help-open icon-key" type="button" aria-label="How to play" title="How to play"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M11.5 12.2c.4-2.8 2.4-4.4 4.8-4.4 2.6 0 4.6 1.8 4.6 4.1 0 2.6-2.6 3.3-3.9 4.6-.7.7-.9 1.6-.9 2.8"/><circle cx="16.1" cy="24.2" r="1.3" fill="currentColor" stroke="none"/></svg></button><button class="icon-key home-key" id="slot-back" type="button" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M5 15L16 5l11 10"/><path d="M8 13v14h16V13"/><path d="M13.5 27v-7h5v7"/></svg></button></span>
+    </header>
+    <div class="reveal">
+      <div class="reveal-die" id="reveal-die" aria-hidden="true"></div>
+      <p class="reveal-cat pending" id="reveal-cat"><span class="cat-icon"></span><span class="cat-name"></span></p>
+      <div class="reveal-word pending" id="reveal-word">
+        <!-- The gold marquee board: a ring of bulbs (one rounded rect, dotted by its dash pattern, so the bulbs
+             space evenly round the corners at any size); every other bulb chases slowly. -->
+        <div class="marquee">
+          <svg class="marquee-bulbs" aria-hidden="true" focusable="false"><rect class="bulbs-dim" width="100%" height="100%" rx="18" pathLength="240"/><rect class="bulbs-halo" width="100%" height="100%" rx="18" pathLength="240"/><rect class="bulbs-lit" width="100%" height="100%" rx="18" pathLength="240"/><rect class="bulbs-core" width="100%" height="100%" rx="18" pathLength="240"/></svg>
+          <p class="reveal-text" id="reveal-text"></p>
+        </div>
+        <p class="reveal-sub" id="reveal-sub"></p>
+      </div>
+      <h2 id="slot-sentence" class="sr-only" role="status"></h2>
+      <div class="slot-actions">
+        <button class="quiet-key" id="slot-skip" type="button">Skip</button>
+        <button class="soft-key" id="slot-new" type="button" hidden><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path d="M25.6 12.4C23.8 7.8 19.8 5 15.4 5.2 9.4 5.4 5 10.2 5.2 16.2c.2 5.8 5 10.4 10.8 10.4 4.4 0 8.2-2.6 9.8-6.6"/><path d="M26.4 4.8l-.8 7.6-7.6-1"/></svg><span>Roll again</span></button>
+        <button class="go-key" id="slot-start" type="button" hidden><span class="menu-name">Start drawing</span><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M6 16h18M17 8l8 8-8 8"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawing: the buzzer pad. The scoreboard (category and word) on top, the big white canvas, the colours, the tool
+       keys and the gold Done! buzzer. -->
+  <section id="game" hidden>
+    <header class="game-top">
+      <span class="wm-slot"></span>
+      <div class="word-board" id="prompt-bar">
+        <span class="cat-icon" id="word-icon" aria-hidden="true"></span><span class="sr-only" id="prompt-label"></span>
+        <p class="word-text" id="prompt-text"></p>
+      </div>
+      <nav class="game-nav" aria-label="Drawing">
+        <button class="help-open icon-key" id="help-btn" type="button" aria-label="How to play" title="How to play"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path d="M11.5 12.2c.4-2.8 2.4-4.4 4.8-4.4 2.6 0 4.6 1.8 4.6 4.1 0 2.6-2.6 3.3-3.9 4.6-.7.7-.9 1.6-.9 2.8"/><circle cx="16.1" cy="24.2" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+        <button class="icon-key" id="back-home" type="button" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><path d="M5 15L16 5l11 10"/><path d="M8 13v14h16V13"/><path d="M13.5 27v-7h5v7"/></svg></button>
+      </nav>
+    </header>
+    <div id="stage">
+      <div class="easel">
+        <div class="easel-board"><div class="stamp"><canvas id="board" width="1800" height="1200" aria-label="Drawing canvas"></canvas></div></div>
+        <div class="easel-ledge" id="easel-ledge"></div>
+      </div>
+    </div>
+    <aside id="brush-settings" aria-label="Drawing settings"></aside>
+    <div id="tools"></div>
+  </section>
+
+  <script src="daily.js"></script>
+  <script src="dice.js" onerror="this.remove()"></script>
+  <script src="streak.js"></script>
+  <script src="timer.js"></script>
+  <script src="color-picker.js"></script>
+  <script src="drawing.js"></script>
+  <script src="votes.js"></script>
+  <script src="leaderboard.js"></script>
+  <script src="gallery.js"></script>
+  <script src="sketchbook.js"></script>
+  <!-- Publishing: no-ops until supabase-config.js has a real project (see backend/README.md). -->
+  <script src="vendor/supabase.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="publish.js"></script>
+  <!-- Lobbies: Host a game creates one. Games register with ScrawdleLobby.registerGame
+       (see the top of lobby.js), so load a game's script AFTER this line. -->
+  <script src="lobby.js"></script>
+  <!-- Lobby games. party-rules.js is party.js's tested logic. -->
+  <script src="party-rules.js"></script>
+  <script src="party.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const setupEl = $("setup");
+    const slotEl = $("slot");
+    const gameEl = $("game");
+    const errorEl = $("setup-error");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const OPEN_KEY = "scrawdle-open"; // which drawing this tab is on, so a refresh returns to it
+    const W = ScrawdleDaily;
+
+    /* ---------- Wordmark and help ---------- */
+    for (const slot of document.querySelectorAll(".wm-slot")) slot.append($("wordmark").content.cloneNode(true));
+    const help = $("help");
+    for (const b of document.querySelectorAll(".help-open")) b.addEventListener("click", () => help.showModal());
+    help.querySelector(".close").addEventListener("click", () => help.close());
+    help.addEventListener("click", (e) => { if (e.target === help) help.close(); });
+    // The finished PNG is lettered on a canvas, so these fonts must be ready before anyone gets there.
+    document.fonts.load('64px "Shrikhand"');
+    document.fonts.load('700 30px "Bricolage Grotesque"');
+
+    /* ---------- Light and dark mode ---------- */
+    // The show is always the night studio, so the key is hidden (screens.css); the choice is still remembered.
+    const THEME_KEY = "scrawdle-theme";
+    const themeBtn = $("theme-toggle");
+    function showTheme() {
+      const dark = document.documentElement.dataset.theme === "dark";
+      themeBtn.setAttribute("aria-pressed", String(dark));
+      themeBtn.querySelector(".theme-label").textContent = themeBtn.title = "Dark mode";
+    }
+    themeBtn.addEventListener("click", () => {
+      const dark = document.documentElement.dataset.theme !== "dark";
+      if (dark) document.documentElement.dataset.theme = "dark";
+      else delete document.documentElement.dataset.theme;
+      try { localStorage.setItem(THEME_KEY, dark ? "dark" : "light"); } catch (err) { /* private browsing: it just isn't remembered */ }
+      showTheme();
+    });
+    showTheme();
+
+    /* ---------- Words ---------- */
+    // words.json, loaded once (daily.js). It never fails: a missing or broken file gives a small built-in list.
+    let lastQuick = null; // Quick draw doesn't roll the same word twice in a row
+    const todaysPick = async () => W.wordOfTheDay(ScrawdleDrawing.dayKey(), await W.loadWords());
+
+    /* ---------- The reveal: the die rolls, lands on the category, then the word flips onto the marquee ---------- */
+    // The die is dice.js (ScrawdleDice.roll(container, category) -> Promise) when it's there; otherwise a stand-in
+    // cube drawn here tumbles and lands the same way. The word is never shown before the die has landed.
+    const FACE_ORDER = ["front", "right", "back", "left", "top", "bottom"];
+    function standInDie(box, category) {
+      const others = W.CATEGORIES.filter((c) => c !== category);
+      const faces = [category, ...others];
+      box.innerHTML = `<div class="die3d"><div class="cube">${faces.map((c, i) => `<span class="face ${FACE_ORDER[i]}"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#cat-${c}"/></svg></span>`).join("")}</div><span class="die-shadow"></span></div>`;
+      const cube = box.querySelector(".cube");
+      if (reduceMotion || !cube.animate) return Promise.resolve();
+      const land = "rotateX(-18deg) rotateY(-26deg)";
+      const a = cube.animate([
+        { transform: "translateY(-160px) rotateX(520deg) rotateY(-380deg) scale(.7)", offset: 0 },
+        { transform: "translateY(0) rotateX(260deg) rotateY(-200deg) scale(1)", offset: .45 },
+        { transform: "translateY(-46px) rotateX(120deg) rotateY(-90deg)", offset: .66 },
+        { transform: `translateY(0) ${land}`, offset: .86 },
+        { transform: `translateY(-8px) ${land}`, offset: .93 },
+        { transform: `translateY(0) ${land}` },
+      ], { duration: 1500, easing: "cubic-bezier(.3,.7,.4,1)", fill: "forwards" });
+      return a.finished.catch(() => {});
+    }
+    function rollDie(box, category) {
+      const dice = window.ScrawdleDice;
+      if (dice && typeof dice.roll === "function") {
+        try { return Promise.resolve(dice.roll(box, String(category).toLowerCase())).catch(() => standInDie(box, category)); } catch (err) { /* fall through */ }
+      }
+      return standInDie(box, category);
+    }
+    // A category's die-face icon: dice.js's when it's loaded (one style with the die), else the sprite above.
+    const catIcon = (category) => (window.ScrawdleDice && typeof ScrawdleDice.icon === "function"
+      ? ScrawdleDice.icon(String(category).toLowerCase())
+      : `<svg viewBox="0 0 48 48" aria-hidden="true"><use href="#cat-${category}"/></svg>`);
+    // The word on the marquee: one cream flip tile per letter, flipping in one after another (screens.css .tile).
+    // Each word stays together on a line; the last word of a phrase is the punchline, in magenta. A screen reader
+    // gets the plain word (the tiles are hidden from it).
+    // The word on cream tiles, in balanced rows (ScrawdlePartyRules.wordRows, the same rule as the party boards: 1 to
+    // 3 rows, the widest as narrow as it can be, "a/an/the" with its word, no lone short word or narrow middle word).
+    function letterWord(target, word) {
+      const R = window.ScrawdlePartyRules;
+      const NBSP = "\u00a0"; // a compound in words.json ("ice cream"): one word for the rows, two words on the tiles
+      const words = word.split(/ +/).filter(Boolean);
+      // a tile's size for a row `w` tiles wide in `k` rows: the board's width, and a third of the screen's height
+      const width = Math.max(240, (target.clientWidth || 320) - 40);
+      const size = (w, k) => Math.min(92, (width - 8) / (w * 1.12), (innerHeight * 0.3) / (k * 1.5));
+      const rows = R && R.wordRows ? R.wordRows(word, { gap: 0.45, size }) : [words];
+      let n = 0, seen = 0;
+      const tokens = rows.flat().length; // the last word on the board is magenta (a compound broken over two rows counts as two)
+      target.style.setProperty("--longest", String(Math.max(1, ...rows.map((r) => (R && R.rowWidth ? R.rowWidth(r, 0.45) : r.join("").length)))));
+      target.style.setProperty("--letters", String(words.join("").split(NBSP).join("").length));
+      const plain = document.createElement("span");
+      plain.className = "sr-only";
+      plain.textContent = word.split(NBSP).join(" ");
+      const tiles = document.createElement("span");
+      tiles.className = "tiles";
+      tiles.setAttribute("aria-hidden", "true");
+      tiles.append(...rows.map((row) => {
+        const line = document.createElement("span");
+        line.className = "tile-row";
+        line.append(...row.flatMap((token) => {
+          seen++;
+          const hot = seen === tokens && tokens > 1;
+          return token.split(NBSP).map((w) => {
+            const group = document.createElement("span");
+            group.className = hot ? "tile-word hot" : "tile-word";
+            for (const ch of w) {
+              const t = document.createElement("span");
+              t.className = "tile";
+              // W and M are wider than a tile at full size: drawn narrower inside it
+              if (/[wm]/i.test(ch)) { const g = document.createElement("span"); g.className = /w/i.test(ch) ? "tile-w" : "tile-m"; g.textContent = ch; t.append(g); }
+              else t.textContent = ch;
+              t.style.setProperty("--i", String(n++));
+              group.append(t);
+            }
+            return group;
+          });
+        }));
+        return line;
+      }));
+      target.replaceChildren(plain, tiles);
+    }
+
+    let revealRun = 0;
+    let endReveal = () => {};
+    async function reveal(pick, daily) {
+      const run = ++revealRun;
+      // Which word this is goes on a line under the marquee (never a label above it).
+      $("reveal-sub").textContent = daily
+        ? `The Daily Word for ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}`
+        : "Quick draw";
+      slotEl.hidden = false;
+      slotEl.classList.remove("landed");
+      window.scrollTo(0, 0); // on a phone the page may still be scrolled from the screen before
+      gameEl.inert = true;
+      $("reveal-cat").classList.add("pending"); // kept in the layout, unseen, so nothing jumps when they land
+      $("reveal-word").classList.add("pending");
+      $("slot-new").hidden = true;
+      $("slot-start").hidden = true;
+      $("slot-skip").hidden = false;
+      $("slot-sentence").textContent = "Rolling the die";
+      $("reveal-cat").querySelector(".cat-icon").innerHTML = catIcon(pick.category);
+      $("reveal-cat").querySelector(".cat-name").textContent = window.ScrawdleDice && ScrawdleDice.phrase ? ScrawdleDice.phrase(pick.category) : `${pick.category}!`;
+      letterWord($("reveal-text"), pick.word);
+      let skip;
+      const skipped = new Promise((r) => { skip = r; });
+      endReveal = skip;
+      await Promise.race([rollDie($("reveal-die"), pick.category), skipped]);
+      if (run !== revealRun) return;
+      $("slot-skip").hidden = true;
+      $("reveal-cat").classList.remove("pending");
+      $("slot-sentence").textContent = `${pick.category}. Draw this: ${pick.word}`;
+      // A beat for the category to pop, then the word.
+      if (!reduceMotion) await Promise.race([new Promise((r) => setTimeout(r, 420)), skipped]);
+      if (run !== revealRun) return;
+      $("reveal-word").classList.remove("pending");
+      slotEl.classList.add("landed");
+      $("slot-new").hidden = daily;
+      $("slot-start").hidden = false;
+      $("slot-start").focus({ preventScroll: true });
+    }
+    $("slot-skip").addEventListener("click", () => endReveal());
+    $("slot-start").addEventListener("click", () => {
+      revealRun++;
+      slotEl.hidden = true;
+      gameEl.inert = false;
+      $("back-home").focus({ preventScroll: true });
+    });
+    $("slot-new").addEventListener("click", () => startQuick());
+
+    /* ---------- Screens ---------- */
+    // Which saved drawing a round belongs to: today's Daily Word (slot "today"; the older Daily Scrawl, Basic and
+    // Detailed used it too), Quick draw (slot "free", what used to be Free Play), and, from before, Daily Doodle
+    // ("scrawl") and Time Challenge ("timed"), which can still be opened from My drawings.
+    const slotFor = (round) => ScrawdleDrawing.slotOf(round);
+    // The scoreboard on the drawing screen: the category (its die face) and the word, the last word in magenta.
+    function showWord(round) {
+      const prompts = round.prompts || [];
+      const word = W.isWordPrompt(prompts) ? prompts[0] : null;
+      const kind = round.mode === "scrawl" ? "Daily Doodle" : round.timed ? "Time Challenge" : round.daily === false ? "Quick draw" : "Daily Word";
+      $("prompt-label").textContent = word ? `${word.label} · ${kind}` : kind;
+      $("word-icon").innerHTML = catIcon(word ? word.label : "Wild");
+      $("prompt-text").textContent = round.mode === "scrawl" ? "Draw anything you like" : W.wordOf(prompts);
+      // A long phrase (or an old list of animal parts) gets smaller lettering so it stays on the scoreboard.
+      const len = $("prompt-text").textContent.length;
+      $("prompt-bar").dataset.size = len > 60 ? "xs" : len > 32 ? "s" : "m";
+      const shown = $("prompt-text").textContent;
+      const cut = shown.lastIndexOf(" ");
+      if (word && cut > 0) {
+        const em = document.createElement("em");
+        em.textContent = shown.slice(cut + 1);
+        $("prompt-text").replaceChildren(shown.slice(0, cut + 1), em);
+      }
+    }
+
+    function showGame() {
+      const round = board.round;
+      showWord(round);
+      try { sessionStorage.setItem(OPEN_KEY, slotFor(round)); } catch (err) { /* storage blocked: a refresh just goes home */ }
+      setupEl.hidden = true;
+      gameEl.hidden = false;
+      window.scrollTo(0, 0); // on a phone the page may still be scrolled from the home screen, hiding the top of the drawing screen
+      board.setLocked(Boolean(round.timed)); // an old Time Challenge opened from My drawings is over
+      markGameEntry();
+    }
+
+    async function begin(mode, pick, daily) {
+      errorEl.hidden = true;
+      await board.flush();
+      await board.start(mode, W.promptOf(pick), daily);
+      board.setLocked(false);
+      showGame();
+      reveal(pick, daily);
+    }
+
+    // Today has one save. Pressing Daily Word again goes back to it. A drawing on today's save from before the
+    // Daily Word (the animal parts) is replaced, and kept in My drawings, only after asking.
+    async function startDaily() {
+      if (homeDay !== ScrawdleDrawing.dayKey()) saved = await board.drafts(); // a new day since home was drawn: yesterday's goes to My drawings
+      const today = saved.today;
+      if (today && today.marked) {
+        if (today.mode === "daily" && W.isWordPrompt(today.prompts)) return openSaved("today");
+        if (!await ask({ title: "Start the Daily Word?", body: "Your drawing for today is replaced and kept in My drawings.", yes: "Start", no: "Keep my drawing" })) return;
+      }
+      begin("daily", await todaysPick(), true);
+    }
+
+    // Quick draw: a fresh random word every time. A drawing you want back is kept in My drawings when it's replaced.
+    async function startQuick() {
+      const pick = W.randomWord(await W.loadWords(), { avoid: lastQuick });
+      lastQuick = pick.word;
+      begin("basic", pick, false);
+    }
+
+    // Play again, from the finish screen. Daily Word: a clean canvas with the same word (the finished drawing goes to
+    // My drawings; a line says where). Quick draw: a new roll.
+    async function playAgain() {
+      const round = board.round;
+      if (!round) return;
+      if (round.daily === false || round.timed) return startQuick();
+      const published = round.daily && isPublishedDraft({ day: round.day, mode: round.mode });
+      await board.flush();
+      await board.start(round.mode, round.prompts, round.daily);
+      showGame();
+      board.toast(published ? "Your published drawing stays up. The finished one is kept in My drawings." : "Your finished drawing is kept in My drawings.");
+    }
+
+    // A yes/no question in the game's own box. Resolves true for the first button.
+    const askEl = $("ask-box");
+    function ask({ title, body, yes, no }) {
+      askEl.querySelector("#ask-title").textContent = title;
+      askEl.querySelector("#ask-body").textContent = body || "";
+      askEl.querySelector("#ask-body").hidden = !body;
+      askEl.querySelector('[value="yes"]').textContent = yes;
+      askEl.querySelector('[value="no"]').textContent = no;
+      return new Promise((resolve) => {
+        askEl.addEventListener("close", () => resolve(askEl.returnValue === "yes"), { once: true });
+        askEl.returnValue = "no";
+        askEl.showModal();
+        askEl.querySelector('[value="yes"]').focus();
+      });
+    }
+    askEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) askEl.close(b.value); else if (e.target === askEl) askEl.close("no"); });
+    window.scrawdleAsk = ask; // the lobby, Scrawdle Party and My drawings ask their questions in the same box
+
+    let saved = {};
+    let homeDay = null; // the day the home screen was built for; a new day rebuilds it (see below)
+
+    // True once this browser has published that saved drawing (publish.js keeps the list).
+    const isPublishedDraft = (d) => Boolean(d) && typeof window.scrawdleIsPublished === "function" && window.scrawdleIsPublished(d.day, d.mode);
+
+    async function showHome() {
+      revealRun++;
+      gameEl.hidden = true;
+      gameEl.inert = false;
+      slotEl.hidden = true;
+      try { sessionStorage.removeItem(OPEN_KEY); sessionStorage.removeItem(ScrawdleDrawing.FINISH_KEY); } catch (err) { /* storage blocked */ }
+      homeDay = ScrawdleDrawing.dayKey();
+      saved = await board.drafts();
+      // A drawing left on its slot without Keep it (the tab was closed) is gone; what you kept is in My drawings.
+      // A drawing already published is finished, so it stays.
+      for (const slot of ["today", "scrawl", "free"]) {
+        const d = saved[slot];
+        if (d && d.marked && !d.finished && !isPublishedDraft(d)) { await board.forgetSlot(slot); delete saved[slot]; }
+      }
+      setupEl.hidden = false;
+      // Daily Word: hidden on blank tiles until rolled; once today's is done, the word shows on the card.
+      const t = saved.today;
+      const done = Boolean(t && t.marked && t.mode === "daily" && W.isWordPrompt(t.prompts) && (isPublishedDraft(t) || t.finished));
+      $("mode-daily").classList.toggle("is-done", done);
+      $("daily-text").textContent = done ? `You drew ${W.wordOf(t.prompts)}` : `Roll the word for ${new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`;
+      $("mode-daily").setAttribute("aria-label", done ? `Daily Word, done: ${W.wordOf(t.prompts)}. Open your drawing` : "Daily Word: roll today's word");
+      showNextWord();
+      // The streak of days in a row with a finished daily drawing (streak.js). Hidden until there is one.
+      const streakText = window.ScrawdleStreak ? ScrawdleStreak.homeText(ScrawdleStreak.read(ScrawdleDrawing.dayKey())) : "";
+      $("home-streak").textContent = streakText;
+      $("home-streak").hidden = !streakText;
+    }
+
+    // A tab left open on home past midnight: when it's looked at again on a new day, home is rebuilt for today.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && !setupEl.hidden && homeDay && homeDay !== ScrawdleDrawing.dayKey()) showHome();
+    });
+
+    // Once today's Daily Word is drawn, home says when the next word comes. Updated each minute.
+    function showNextWord() {
+      const done = $("mode-daily").classList.contains("is-done");
+      $("home-next").textContent = done ? `New word in ${ScrawdleDrawing.nextPartsIn()}` : "";
+      $("home-next").hidden = !done;
+    }
+    setInterval(() => { if (!setupEl.hidden) showNextWord(); }, 60000);
+
+    async function openSaved(slot) {
+      const round = board.round;
+      // Still the drawing on the canvas, so its undo history comes along too.
+      if (round && slotFor(round) === slot && round.day === ScrawdleDrawing.dayKey()) { showGame(); return; }
+      await board.flush();
+      if (await board.restore(slot)) showGame();
+      else showHome();
+    }
+
+    $("mode-daily").addEventListener("click", startDaily);
+    $("free-play").addEventListener("click", startQuick);
+    // Join a game: the letters from the big screen (4 now; older rooms have 5). Letters only, shown in capitals as they're typed.
+    const joinInput = $("join-code");
+    const JOIN_HINT = $("join-help").textContent;
+    joinInput.addEventListener("input", () => {
+      const clean = joinInput.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5);
+      if (clean !== joinInput.value) joinInput.value = clean;
+      $("join-help").textContent = JOIN_HINT;
+      $("join-form").classList.remove("bad");
+    });
+    $("join-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const code = joinInput.value.trim().toUpperCase();
+      if (!/^[A-Z]{4,5}$/.test(code)) {
+        $("join-help").textContent = "Type the letters from the big screen, like BKQZ.";
+        $("join-form").classList.add("bad");
+        joinInput.focus();
+        return;
+      }
+      location.href = `${location.pathname}?${code}`; // the same address an invite link opens
+    });
+    $("back-home").addEventListener("click", askLeave);
+    $("slot-back").addEventListener("click", () => { leaveOk = true; goHome(); }); // nothing is drawn yet on the reveal screen
+
+    /* ---------- The browser's Back button ---------- */
+    // The game is one page, so opening a drawing adds one history entry: Back closes the finish screen, gallery, or
+    // help first, then returns home, and Forward reopens the drawing. The lobby's invite links use the same history
+    // (replaceState in lobby.js), so this only adds its own key to whatever state is there.
+    const GAME_ENTRY = "scrawdleGame";
+    let lastSlot = null; // the drawing Back left, so Forward can reopen it
+    const onGameEntry = () => Boolean(history.state && history.state[GAME_ENTRY]);
+    function markGameEntry() {
+      if (!onGameEntry()) history.pushState({ ...(history.state || {}), [GAME_ENTRY]: true }, "", location.href);
+    }
+    // The in-page "Back to home" buttons go through history too, so the browser's Back afterwards leaves.
+    async function goHome() {
+      if (onGameEntry()) { history.back(); return; }
+      leaveOk = false;
+      lastSlot = board.round ? slotFor(board.round) : null;
+      await board.flush();
+      showHome();
+    }
+
+    /* ---------- Leaving a drawing: keep it for later, or discard it ---------- */
+    // The house key, the Scrawdle name and the browser's Back all ask first, unless there's nothing to keep: the
+    // canvas is empty, the drawing is already published, or it's locked. Keep it puts the drawing in My drawings;
+    // Discard removes it; Esc or a tap outside keeps drawing.
+    const leaveEl = $("leave-drawing");
+    let leaveOk = false;   // the player chose, so the trip home doesn't ask again
+    let leaving = false;   // closing the dialog because they chose Keep or Discard, not Keep drawing
+    const nothingToAsk = () => gameEl.hidden || !slotEl.hidden || board.locked
+      || (board.round && typeof window.scrawdleIsPublished === "function" && window.scrawdleIsPublished(board.round.day, board.round.mode))
+      || board.isEmpty; // last: it scans the canvas
+    function askLeave() {
+      if (nothingToAsk()) { leaveOk = true; goHome(); return; }
+      const thumb = leaveEl.querySelector(".leave-thumb");
+      const ctx = thumb.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, thumb.width, thumb.height);
+      ctx.drawImage($("board"), 0, 0, thumb.width, thumb.height);
+      if (!leaveEl.open) leaveEl.showModal();
+      leaveEl.querySelector('[data-leave="save"]').focus();
+    }
+    leaveEl.addEventListener("click", async (e) => {
+      const choice = e.target.closest("[data-leave]");
+      if (!choice) { if (e.target === leaveEl) leaveEl.close(); return; } // a click outside the box keeps drawing
+      leaving = true;
+      leaveEl.close();
+      if (choice.dataset.leave === "delete") await board.discard();
+      else if (choice.dataset.leave === "save") await board.stash(); // into My drawings, off its slot
+      leaveOk = true;
+      goHome();
+    });
+    leaveEl.addEventListener("close", () => {
+      if (leaving) { leaving = false; return; }
+      if (!gameEl.hidden) markGameEntry(); // Keep drawing, or Esc
+    });
+    window.addEventListener("popstate", async () => {
+      const open = ["finish", "gallery", "help"].map((id) => document.getElementById(id)).find((d) => d && d.open);
+      if (open) {
+        open.close();
+        if (!gameEl.hidden) markGameEntry(); // still drawing, so the next Back goes home
+        return;
+      }
+      if (onGameEntry()) { // Forward, back into the drawing
+        if (gameEl.hidden && lastSlot) openSaved(lastSlot);
+        else if (gameEl.hidden) history.back();
+        return;
+      }
+      if (!gameEl.hidden || !slotEl.hidden) {
+        if (!leaveOk && !nothingToAsk()) { askLeave(); return; }
+        leaveOk = false;
+        lastSlot = board.round ? slotFor(board.round) : null;
+        await board.flush();
+        showHome();
+      }
+    });
+
+    /* ---------- The Scrawdle name in the top-left goes home ---------- */
+    // From any screen: it closes the finish screen, gallery, My drawings, or help, leaves a lobby the same way its
+    // Leave lobby button does, and returns home through history like Back to home.
+    async function wordmarkHome() {
+      const room = document.getElementById("lobby");
+      if (room && room.open) room.querySelector('[data-act="leave"]').click();
+      const finished = $("finish") && $("finish").open;
+      for (const id of ["finish", "gallery", "sketchbook", "help"]) {
+        const d = document.getElementById(id);
+        if (d && d.open) d.close();
+      }
+      if (gameEl.hidden && slotEl.hidden) return;
+      if (finished) { leaveOk = true; goHome(); } else askLeave();
+    }
+    function makeWordmarksLinks() {
+      for (const mark of document.querySelectorAll(".wordmark")) {
+        if (mark.closest("#setup") || mark.dataset.home) continue; // already home there
+        mark.dataset.home = "true";
+        mark.setAttribute("role", "link");
+        mark.setAttribute("tabindex", "0");
+        mark.setAttribute("aria-label", "Scrawdle, back to home");
+        mark.title = "Back to home";
+      }
+    }
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".wordmark[data-home]")) wordmarkHome();
+    });
+    document.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target.closest && e.target.closest(".wordmark[data-home]")) {
+        e.preventDefault();
+        wordmarkHome();
+      }
+    });
+
+    /* ---------- Drawing board (see drawing.js) ---------- */
+    const board = ScrawdleDrawing.createBoard({ canvas: $("board"), toolbar: $("tools"), settings: $("brush-settings"), palette: $("easel-ledge") });
+    const gallery = ScrawdleGallery.createGallery(board);
+    const sketchbook = ScrawdleSketchbook.create(board, { onContinue: openSaved });
+    $("my-drawings").addEventListener("click", () => sketchbook.show());
+    $("public-drawings").hidden = typeof window.scrawdlePublicGallery !== "function"; // needs the Supabase project; it links to public-drawings/
+    $("leaderboard-link").hidden = typeof window.scrawdlePublicGallery !== "function"; // the same data, ranked (leaderboard.js)
+
+    // Host a game presses Create on the Lobby card that lobby.js adds (the card itself is hidden in screens.css);
+    // its error message shows under the Host buzzer.
+    const lobbyCard = document.querySelector(".lobby-card");
+    if (lobbyCard) {
+      const err = lobbyCard.querySelector(".lobby-error");
+      if (err) $("multiplayer-error").append(err);
+      $("multiplayer").addEventListener("click", () => { const create = lobbyCard.querySelector('[data-act="create"]'); if (create) create.click(); });
+    } else $("multiplayer").hidden = true;
+    const finish = ScrawdleDrawing.createFinishScreen(board, gallery, {
+      onHome: () => { leaveOk = true; goHome(); }, // finished, so no "Leave your drawing?"
+      onPlayAgain: playAgain,
+    });
+    board.onDone = () => {
+      if (board.isEmpty) { board.toast("Draw something first.", { ms: 2500 }); return; } // a blank canvas isn't finished
+      board.markFinished();
+      return finish.open();
+    };
+    makeWordmarksLinks(); // after every screen with a wordmark exists
+
+    /* ---------- Size and opacity: one key beside the tools that opens them ---------- */
+    // The key shows the current size, colour and opacity as a dot; pressing it opens the settings as a panel next
+    // to it, and a tap anywhere else (but the canvas), or Escape, closes it.
+    (() => {
+      const panel = $("brush-settings");
+      const tray = $("tools").querySelector(".tray-tools");
+      if (!panel || !tray) return;
+      const key = document.createElement("button");
+      key.type = "button";
+      key.className = "tool settings-toggle";
+      key.setAttribute("aria-controls", "brush-settings");
+      key.setAttribute("aria-expanded", "false");
+      key.innerHTML = '<span class="st-dot" aria-hidden="true"><i></i></span><span class="tool-label">Size</span>';
+      tray.append(key);
+      const dot = key.querySelector(".st-dot i");
+      function describe() {
+        const size = panel.querySelector(".size-value")?.textContent || "";
+        const opacity = panel.querySelector(".opacity-value")?.textContent || "100%";
+        const px = parseInt(size, 10);
+        const swatch = document.querySelector('#easel-ledge .swatch[aria-pressed="true"]');
+        const eraser = /eraser/i.test(panel.querySelector(".settings-title")?.textContent || "");
+        dot.style.width = dot.style.height = `${Number.isFinite(px) ? Math.max(5, Math.min(24, 4 + px / 2)) : 16}px`;
+        dot.style.background = eraser ? "#fff" : (swatch ? getComputedStyle(swatch).getPropertyValue("--swatch") : "") || "#1e1b2e";
+        dot.style.opacity = String(Math.max(0.15, parseInt(opacity, 10) / 100 || 1));
+        const text = `Size and opacity: ${size || "fill"}, ${opacity}`;
+        key.title = text;
+        key.setAttribute("aria-label", `Size. ${text}`);
+      }
+      new MutationObserver(describe).observe(panel, { subtree: true, childList: true, characterData: true });
+      $("easel-ledge").addEventListener("click", () => setTimeout(describe, 0));
+      describe();
+      function place() {
+        const r = key.getBoundingClientRect();
+        const w = Math.min(300, innerWidth - 24);
+        panel.style.width = `${w}px`;
+        panel.style.left = `${Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2))}px`;
+        const below = innerHeight - r.bottom, above = r.top;
+        const h = panel.offsetHeight;
+        if (below >= h + 12 || below >= above) { panel.style.top = `${r.bottom + 8}px`; panel.style.bottom = ""; }
+        else { panel.style.top = ""; panel.style.bottom = `${innerHeight - r.top + 8}px`; }
+      }
+      const isOpen = () => panel.classList.contains("open");
+      function setOpen(open) {
+        panel.classList.toggle("open", open);
+        key.setAttribute("aria-expanded", String(open));
+        key.setAttribute("aria-pressed", String(open));
+        if (open) place();
+      }
+      key.addEventListener("click", () => setOpen(!isOpen()));
+      // A tap outside closes it, except on the canvas: you can try a size, draw a stroke, and adjust again.
+      document.addEventListener("pointerdown", (e) => { if (isOpen() && !panel.contains(e.target) && !key.contains(e.target) && !e.target.closest(".easel-board")) setOpen(false); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen()) { setOpen(false); key.focus(); } });
+      addEventListener("resize", () => { if (isOpen()) place(); });
+      addEventListener("scroll", () => { if (isOpen()) place(); }, { passive: true });
+      new MutationObserver(() => { if (gameEl.hidden && isOpen()) setOpen(false); }).observe(gameEl, { attributes: true, attributeFilter: ["hidden"] });
+    })();
+
+    // A refresh (or the browser's Back/Forward) returns to the drawing this tab was on, and to the finish screen if
+    // that was open. A new visit, or a link to home, starts at home.
+    (async () => {
+      const nav = performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
+      const session = (k) => { try { return sessionStorage.getItem(k); } catch (err) { return null; } };
+      let fromSelf = false;
+      try { const r = new URL(document.referrer); fromSelf = r.origin === location.origin && r.pathname === location.pathname; } catch (err) { /* no referrer */ }
+      const resumed = !nav || nav.type === "reload" || nav.type === "back_forward" || (nav.type === "navigate" && fromSelf);
+      const open = resumed ? session(OPEN_KEY) : null;
+      const found = await board.drafts();
+      if (open && found[open] && await board.restore(open)) {
+        showGame();
+        if (session(ScrawdleDrawing.FINISH_KEY) === "1") finish.open();
+      } else showHome();
+    })();
+  </script>
+</body>
+</html>

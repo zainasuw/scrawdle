@@ -1,0 +1,138 @@
+/* Scrawdle's die (dice.js): a cream game-show die with a category mark printed on each face, landing on a lit stage
+ * table (a violet drum with a gold-lit rim and a row of bulbs, drawn here as the die's ::before and ::after; the
+ * table's top reaches a little past the die's box on each side, so the die sits well inside its rim).
+ * Size it with --dice-size on the container (default 160px); the die box is 1.5 x 1.6 times that, so the hop, the
+ * shadow and the table fit inside it. Every selector carries :not(#_) so these rules outrank a screen root's
+ * `#root :where(*) { all: revert }` reset (that reset counts as one id). Tokens: stage.css. */
+
+.dice:not(#_) {
+  --s: var(--dice-size, 160px);
+  --r: calc(var(--s) * .075); /* a gentle round: a bigger radius stands each face proud of its neighbours mid-tumble */
+  --cream-edge: #F2D6A2;
+  position: relative; display: block; flex: none;
+  width: calc(var(--s) * 1.5); height: calc(var(--s) * 1.6);
+  pointer-events: none; user-select: none;
+}
+/* The air the die falls through: a flat layer that holds the perspective and takes the fade-in, so nothing on the
+ * 3D chain below it (hop, cube, faces) ever carries opacity, filter, mask, clip-path or overflow (each flattens 3D). */
+.dice:not(#_) .dice-air { position: absolute; inset: 0; z-index: 2; perspective: calc(var(--s) * 3.6); perspective-origin: 50% 30%; }
+/* The stage table: its front (with a row of lit bulbs) and its top (a gold-lit rim and a pool of light). */
+.dice.dice:not(#_)::before { /* doubled class: outranks a screen root's ::before reset */
+  content: ""; position: absolute; z-index: 0; left: calc(var(--s) * .02); right: calc(var(--s) * .02); top: calc(var(--s) * 1.22); bottom: 0;
+  border-radius: 0 0 calc(var(--s) * .12) calc(var(--s) * .12) / 0 0 calc(var(--s) * .06) calc(var(--s) * .06);
+  background:
+    radial-gradient(circle, #fff 0 8%, var(--bulb, #FFE7A6) 14%, var(--gold, #FFC23D) 30%, rgb(255 194 61 / 0) 46%) 0 calc(var(--s) * .245) / calc(var(--s) * .1) calc(var(--s) * .1) space no-repeat,
+    repeating-linear-gradient(90deg, rgb(255 255 255 / .05) 0 2px, transparent 2px calc(var(--s) * .1)),
+    linear-gradient(90deg, #1B1350, #3A2690 30%, #4A31A8 45%, #2A1C6C 75%, #160F40);
+}
+.dice.dice:not(#_)::after {
+  content: ""; position: absolute; z-index: 0; left: calc(var(--s) * -.06); width: calc(var(--s) * 1.62); top: calc(var(--s) * 1.02); height: calc(var(--s) * .4);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 42% 46% at 50% 46%, rgb(255 231 166 / .5), rgb(255 231 166 / 0) 100%),
+    radial-gradient(ellipse at 50% 40%, #5B3BB0, #2E1E6E 70%);
+  box-shadow: inset 0 calc(var(--s) * -.03) 0 rgb(0 0 0 / .25), 0 0 0 calc(var(--s) * .018) rgb(255 194 61 / .8), 0 0 calc(var(--s) * .16) rgb(255 194 61 / .38);
+}
+.dice:not(#_) .dice-hop {
+  position: absolute; z-index: 2; left: calc(var(--s) * .25); top: calc(var(--s) * .1);
+  width: var(--s); height: var(--s); transform-style: preserve-3d;
+}
+.dice:not(#_) .dice-cube {
+  position: absolute; inset: 0; transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(-28deg);
+}
+.dice:not(#_) .dice-face, .dice:not(#_) .dice-core i {
+  position: absolute; inset: 0; border-radius: var(--r); display: grid; place-items: center;
+}
+.dice:not(#_) .dice-core { position: absolute; inset: 0; transform-style: preserve-3d; }
+/* A solid inner cube just inside the six faces (square-cornered, a touch smaller): where the faces' rounded corners
+ * leave a notch along an edge, it shows cream there instead of the stage behind, so the die stays one block. */
+.dice:not(#_) .dice-core i { inset: 2.5%; border-radius: calc(var(--r) * .25); background: #EBCB92; }
+.dice:not(#_) .dice-core i:nth-child(1) { transform: translateZ(calc(var(--s) * .475)); }
+.dice:not(#_) .dice-core i:nth-child(2) { transform: rotateY(180deg) translateZ(calc(var(--s) * .475)); }
+.dice:not(#_) .dice-core i:nth-child(3) { transform: rotateY(90deg) translateZ(calc(var(--s) * .475)); }
+.dice:not(#_) .dice-core i:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--s) * .475)); }
+.dice:not(#_) .dice-core i:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--s) * .475)); }
+.dice:not(#_) .dice-core i:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--s) * .475)); }
+/* A slightly smaller square-cornered cube just inside the faces. Where three rounded face corners meet, they leave
+ * a notch at the vertex, and mid-roll one face's corner can stand out past its neighbour's; the shell fills that
+ * notch so the silhouette stays one rounded block. It sits inside the faces' rounding, so it never shows past them. */
+.dice:not(#_) .dice-shell { position: absolute; inset: 0; transform-style: preserve-3d; }
+.dice:not(#_) .dice-shell b { position: absolute; left: 50%; top: 50%; width: calc(var(--s) * .18); height: calc(var(--s) * .18); margin: calc(var(--s) * -.09); border-radius: 50%; background: var(--cream-edge); }
+.dice:not(#_) .dice-shell b:nth-child(4n) { width: calc(var(--s) * .2); height: calc(var(--s) * .2); margin: calc(var(--s) * -.1); }
+.dice:not(#_) .dice-shell b:nth-child(1) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(2) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(3) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(4) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotate3d(-1, 1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(5) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(6) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(7) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(8) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotate3d(1, -1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(9) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(10) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(11) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(12) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotate3d(1, 1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(13) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(14) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(15) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(16) { transform: translate3d(calc(var(--s) * 0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotate3d(-1, -1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(17) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(18) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(19) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(20) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * 0.41)) rotate3d(-1, -1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(21) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(22) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(23) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(24) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * 0.41), calc(var(--s) * -0.41)) rotate3d(1, 1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(25) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(26) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(27) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(28) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * 0.41)) rotate3d(1, -1, 0, 54.74deg); }
+.dice:not(#_) .dice-shell b:nth-child(29) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)); }
+.dice:not(#_) .dice-shell b:nth-child(30) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotateY(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(31) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotateX(90deg); }
+.dice:not(#_) .dice-shell b:nth-child(32) { transform: translate3d(calc(var(--s) * -0.41), calc(var(--s) * -0.41), calc(var(--s) * -0.41)) rotate3d(-1, 1, 0, 54.74deg); }
+/* Cream faces with a soft bevel: bright in the middle, warming evenly towards every edge. The shading has no
+ * direction of its own (a face doesn't know which way it's turned), so mid-tumble two faces meeting at an edge
+ * both darken into it and read as one rounded block, never as a fold between two slabs. */
+.dice:not(#_) .dice-face {
+  background: radial-gradient(ellipse 72% 72% at 50% 46%, #FFFCF2, #FFEFD0 58%, #F3D49F);
+  box-shadow: inset 0 0 0 calc(var(--s) * .012) rgb(255 255 255 / .5), inset 0 0 calc(var(--s) * .08) calc(var(--s) * .006) rgb(170 100 40 / .26);
+  backface-visibility: hidden;
+}
+/* The shine: a soft highlight near the top-left corner (a gradient, never a filter). */
+.dice:not(#_) .dice-face::before {
+  content: ""; position: absolute; left: 9%; top: 6%; width: 34%; height: 13%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / .9), rgb(255 255 255 / 0)); transform: rotate(-20deg);
+}
+.dice:not(#_) .dice-face svg { position: relative; width: 66%; height: 66%; display: block; }
+.dice:not(#_) .dice-front  { transform: translateZ(calc(var(--s) / 2)); }
+.dice:not(#_) .dice-back   { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
+.dice:not(#_) .dice-right  { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
+.dice:not(#_) .dice-left   { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
+.dice:not(#_) .dice-top    { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
+.dice:not(#_) .dice-bottom { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
+/* Side faces a touch warmer and darker, so it reads as a solid block (an overlay, never a filter). */
+.dice:not(#_) .dice-right::after, .dice:not(#_) .dice-left::after, .dice:not(#_) .dice-back::after, .dice:not(#_) .dice-bottom::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgb(196 128 52 / .2);
+}
+.dice:not(#_) .dice-shadow {
+  position: absolute; z-index: 1; left: calc(var(--s) * .26); top: calc(var(--s) * 1.09); width: calc(var(--s) * .98); height: calc(var(--s) * .26); border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(5 3 20 / .85) 30%, rgb(5 3 20 / .35) 70%, rgb(5 3 20 / 0));
+}
+/* Landing: a few gold strokes kick up off the table, and the face that came up gives a little wink. */
+.dice:not(#_) .dice-burst {
+  position: absolute; z-index: 1; left: 0; top: calc(var(--s) * .84); width: 100%; height: calc(var(--s) * .34);
+  stroke: var(--gold, #FFC23D); opacity: 0;
+}
+.dice.landed:not(#_) .dice-burst { animation: dice-burst 700ms cubic-bezier(.2, .8, .2, 1) both; }
+.dice.landed:not(#_) .dice-face.up svg { animation: dice-wink 520ms cubic-bezier(.34, 1.56, .64, 1) 80ms both; }
+@keyframes dice-burst { 0% { opacity: 0; transform: scale(.6); } 30% { opacity: .9; } 100% { opacity: .75; transform: scale(1); } }
+@keyframes dice-wink { 0% { transform: scale(1); } 45% { transform: scale(1.12) rotate(-6deg); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .dice.landed:not(#_) .dice-burst { animation: none; opacity: .75; }
+  .dice.landed:not(#_) .dice-face.up svg { animation: none; }
+}
+
+/* Hidden faces stay hidden: their shine and shade layers too. */
+.dice:not(#_) .dice-face::before, .dice:not(#_) .dice-face::after { backface-visibility: hidden; }

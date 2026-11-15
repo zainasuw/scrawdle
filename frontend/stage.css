@@ -1,0 +1,43 @@
+/* Scrawdle: the TV game-show look (shared tokens, fonts and stage pieces for every screen).
+ * Scrawdle is a Saturday-night family game show: the TV is the set (marquee board, stage lights, contestant
+ * podiums, a die tumbling onto a lit table); every phone is a contestant's buzzer pad. Classy-fun, never casino.
+ * Colours have one job each (below). Never put filter, mask or clip-path on the live drawing canvas or its ancestors. */
+
+@font-face { font-family: "Shrikhand"; src: url("fonts/shrikhand.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Big Shoulders Display"; src: url("fonts/big-shoulders-display.woff2") format("woff2"); font-weight: 800 900; font-display: swap; }
+@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; }
+
+:root {
+  --night: #0B0926;      /* the studio dark (page ground) */
+  --navy: #141038;       /* panels, podium faces */
+  --violet: #2B1C63;     /* stage set, raised surfaces */
+  --plum: #43207A;       /* curtains, secondary surfaces */
+  --gold: #FFC23D;       /* marquee bulbs, the show logo, the one main action */
+  --gold-deep: #C98A00;
+  --bulb: #FFE7A6;       /* lit bulbs, glow */
+  --cream: #FFF4DE;      /* flip tiles, cards, text on dark */
+  --magenta: #F2358A;    /* the category, applause moments */
+  --teal: #1ED3C2;       /* time and "go": countdowns, Done */
+  --ink: #1B1240;        /* text on cream and gold */
+  --ink-soft: #4A3D78;
+  --text: #FFF4DE;       /* text on the dark set */
+  --text-2: #C9BEF0;     /* secondary text on dark */
+  --danger: #FF6B6B;
+  /* contestant colours, in join order */
+  --p1: #F2358A; --p2: #1ED3C2; --p3: #FFC23D; --p4: #8E7BFF; --p5: #FF8A3D; --p6: #6FE36F; --p7: #4FB4FF; --p8: #FF9ECF;
+
+  --font-show: "Shrikhand", "Big Shoulders Display", serif;              /* the show logo and big moments only */
+  --font-board: "Big Shoulders Display", "Bricolage Grotesque", sans-serif; /* flip tiles, scores, timers, codes */
+  --font-ui: "Bricolage Grotesque", system-ui, sans-serif;               /* everything read */
+  --sp-4: 4px; --sp-8: 8px; --sp-12: 12px; --sp-16: 16px; --sp-24: 24px; --sp-32: 32px; --sp-48: 48px;
+  --r-panel: 22px; --r-key: 18px; --r-tile: 10px; --r-pill: 999px;
+  --glow-gold: 0 0 0 2px rgb(255 194 61 / .35), 0 0 22px rgb(255 194 61 / .35);
+  --shadow-panel: 0 18px 40px -12px rgb(0 0 0 / .6), 0 2px 0 rgb(255 255 255 / .06) inset;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);
+  --fast: 140ms; --base: 240ms; --slow: 520ms;
+  --focus: #FFC23D;
+  --bg-stage:
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgb(67 32 122 / .55), transparent 70%),
+    linear-gradient(180deg, #141038 0%, #0B0926 70%);
+}
+@media (prefers-reduced-motion: reduce) { :root { --fast: 0ms; --base: 0ms; --slow: 0ms; } }

@@ -1,0 +1,1038 @@
+/* Lobbies: private rooms. The device that taps "Host a game" (#multiplayer on home) makes one and becomes the
+ * host (for Scrawdle Party, the TV screen); friends type its code (4 letters) into "Join a game" (#join-form /
+ * #join-code on home) on their phones, pick a name, and they're in. Invite links like scrawdle.vercel.app/?BKQZ
+ * still work. (Older 5-letter codes and links are still accepted.)
+ *
+ * What this file does: making and joining a lobby (the home buttons above), the name step for someone joining,
+ * the lobby room (a fallback screen: Scrawdle Party draws its own lobby, see `ownsRoom` below), and a small
+ * contract for games to plug into. It does NOT contain any game. Lobbies only exist while Supabase is
+ * configured (supabase-config.js).
+ *
+ * HOW IT WORKS
+ *  - The code is made by the database (create_lobby() in backend/supabase/schema.sql) and checked
+ *    by lobby_exists(). Nothing about WHO is in a lobby is stored: that's Supabase Realtime,
+ *    one channel per lobby, using presence (who's here) and broadcast (messages).
+ *  - A code is the only thing keeping a lobby private. Anyone who has it can join.
+ *  - The host is whoever has been in the lobby longest. Everyone works it out from the same
+ *    presence data, so everyone agrees. If the host leaves, the next one takes over.
+ *  - Up to MAX_PLAYERS people per lobby.
+ *
+ * ADDING A GAME (this is the part other people's code uses)
+ *
+ *   ScrawdleLobby.registerGame({
+ *     id: "pictionary",              // lowercase letters, digits, dashes
+ *     title: "Pictionary",           // shown on the host's Start button
+ *     description: "Guess the drawing.",   // optional
+ *     minPlayers: 2,                 // optional, default 1
+ *     ownsRoom: false,               // optional: true = the game starts as soon as a lobby is made and draws its
+ *                                    // own lobby screen; everyone who joins drops straight into it, and
+ *                                    // ctx.end() closes the room for everyone (back to home)
+ *     start(ctx) {                   // called on EVERY player's page when the host presses Start
+ *       ctx.container.textContent = "Game on!";   // draw your game's screen inside this element
+ *       return () => { ... };        // optional: cleanup, called when the game ends
+ *     },
+ *   });
+ *
+ *   ctx.container            the full-screen element your game draws into
+ *   ctx.code                 the lobby code
+ *   ctx.me                   { id, name } for this player
+ *   ctx.players()            [{ id, name, joinedAt, game }] in join order; players()[0] is the host
+ *   ctx.isHost()             true on the host's page
+ *   ctx.onPlayersChange(fn)  fn(players) when someone joins, leaves, or renames. Returns an unsubscribe.
+ *   ctx.send(event, data)    send to everyone in the lobby, including yourself
+ *   ctx.on(event, fn)        fn(data, fromPlayerId) for each ctx.send(event, ...). Returns an unsubscribe.
+ *   ctx.kick(playerId)       the host removes a player (asks first; they can't rejoin today)
+ *   ctx.rename(name)         change this player's name (cleaned like a typed name; blank keeps the old one). It
+ *                            reaches everyone through presence, so call it when the name is settled, not per
+ *                            keystroke. Returns the name in use afterwards.
+ *   ctx.end(message)         end the game for everyone and return to the lobby (an ownsRoom game: close the
+ *                            room; `message`, optional, is shown on everyone's home screen)
+ *
+ * Load your game's <script> AFTER lobby.js in index.html, so ScrawdleLobby exists when it runs.
+ *
+ * LIMITS you'll feel (Supabase free plan, per its Realtime limits page, read 2026-11-04):
+ * 100 messages per second for the whole project, 256 KB per message, 200 connections at once (one
+ * per player). So don't send every pointer movement: batch strokes, and send them a few times a
+ * second at most. If the database or this file needs a change, ask Kevin; he runs the SQL.
+ */
+(function (root) {
+  "use strict";
+
+  /* ---------- Pure helpers (tested in tests/lobby.test.js) ---------- */
+  const MAX_PLAYERS = 9; // 8 players and the host's TV
+  const NAME_MAX = 20;
+  const GAME_ID_RE = /^[a-z0-9][a-z0-9-]{0,30}$/;
+
+  // "bkqz", " BKQZ " -> "BKQZ". Codes are 4 letters; an older 5-letter code still counts. Anything else -> null.
+  const CODE_LENGTH = 4;
+  function normalizeCode(input) {
+    const code = String(input == null ? "" : input).trim().toUpperCase();
+    return /^[A-Z]{4,5}$/.test(code) ? code : null;
+  }
+
+  // "?BKQZ" -> "BKQZ". Only a bare 4- or 5-letter query counts, so other links are left alone.
+  function codeFromSearch(search) {
+    const match = /^\?([A-Za-z]{4,5})\/?$/.exec(String(search == null ? "" : search));
+    return match ? match[1].toUpperCase() : null;
+  }
+
+  function lobbyLink(origin, pathname, code) {
+    return `${origin}${pathname || "/"}?${code}`;
+  }
+
+  function cleanName(input) {
+    return String(input == null ? "" : input)
+      .replace(/[\u0000-\u001f\u007f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, NAME_MAX)
+      .trim();
+  }
+
+  const ADJECTIVES = ["Sleepy", "Bouncy", "Fluffy", "Giggly", "Sparkly", "Wiggly", "Snuggly", "Peachy", "Jolly", "Dizzy", "Cozy", "Sunny", "Zippy", "Fuzzy", "Wobbly", "Tiny", "Happy", "Lucky"];
+  const NOUNS = ["Pancake", "Muffin", "Otter", "Bean", "Noodle", "Pebble", "Bunny", "Teacup", "Waffle", "Pickle", "Duckling", "Marshmallow", "Cupcake", "Kitten", "Puddle", "Donut", "Mango", "Penguin"];
+  function randomName(rand = Math.random) {
+    const pick = (list) => list[Math.min(list.length - 1, Math.floor(rand() * list.length))];
+    return `${pick(ADJECTIVES)} ${pick(NOUNS)}`;
+  }
+  // A random name nobody in the room has yet.
+  function unusedName(taken, rand = Math.random) {
+    for (let i = 0; i < 50; i++) {
+      const name = randomName(rand);
+      if (!taken.includes(name)) return name;
+    }
+    return randomName(rand);
+  }
+
+  // Which doodle each player gets: a hash of their id, stepped past any doodle already taken by
+  // someone who joined earlier, so no two players in a lobby share one and every screen agrees.
+  function seatPicks(ids, count) {
+    const taken = new Set();
+    return ids.map((id) => {
+      let h = 0;
+      for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      let i = h % count;
+      while (taken.has(i) && taken.size < count) i = (i + 1) % count;
+      taken.add(i);
+      return i;
+    });
+  }
+
+  // Supabase's presenceState() is { key: [meta, ...] }. Keep each player's newest meta, drop
+  // anything malformed, and sort by how long they've been here (the first one is the host).
+  function playersFromState(state) {
+    const players = [];
+    for (const metas of Object.values(state || {})) {
+      const meta = Array.isArray(metas) ? metas[metas.length - 1] : null;
+      if (!meta || typeof meta.id !== "string" || typeof meta.name !== "string") continue;
+      players.push({
+        id: meta.id,
+        name: cleanName(meta.name) || "Player",
+        joinedAt: Number(meta.joinedAt) || 0,
+        game: typeof meta.game === "string" ? meta.game : null,
+      });
+    }
+    players.sort((a, b) => a.joinedAt - b.joinedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return players;
+  }
+
+  function isOverCap(players, myId, max = MAX_PLAYERS) {
+    const index = players.findIndex((p) => p.id === myId);
+    return index >= max;
+  }
+
+  function activeGameOf(players) {
+    const found = players.find((p) => p.game);
+    return found ? found.game : null;
+  }
+
+  // The callback argument of a broadcast may be the whole message or just its payload.
+  function unwrap(message) {
+    if (message && typeof message === "object" && "payload" in message && "event" in message) return message.payload;
+    return message;
+  }
+
+  /* ----- Kicking (the host kicks, or everyone else votes someone out) ----- */
+  const VOTE_MS = 30000;        // how long a vote to kick stays open
+  const VOTE_COOLDOWN_MS = 60000; // after a vote fails, how long before the same player can be voted on again
+  const VOTE_MIN_PLAYERS = 3;   // with two, one person would decide alone, and the host can already kick
+
+  // A kick counts if the current host sent it, or if it carries out a vote this page saw pass.
+  // (Messages say who sent them, and the lobby can't check that, so this keeps out honest
+  // mistakes and other pages' bugs, not someone set on faking messages.)
+  function mayKick(players, body, passedVotes) {
+    if (!body || typeof body.target !== "string" || typeof body.by !== "string" || body.target === body.by) return false;
+    if (body.reason === "vote") return Boolean(passedVotes && passedVotes.has && passedVotes.has(`${body.voteId}|${body.target}`));
+    return players.length > 0 && players[0].id === body.by;
+  }
+
+  // Why this player can't call a vote on that one right now, or null if they can.
+  function voteBlocker({ players, me, target, active, cooldownUntil = 0, now = Date.now(), inGame = false }) {
+    if (inGame) return "Votes to kick happen in the lobby, not during a game.";
+    if (active) return "A vote is already going.";
+    if (players.length < VOTE_MIN_PLAYERS) return `Votes to kick need at least ${VOTE_MIN_PLAYERS} players.`;
+    if (target === me) return "You can't vote to kick yourself.";
+    if (!players.some((p) => p.id === target) || !players.some((p) => p.id === me)) return "That player isn't here.";
+    if (now < cooldownUntil) return "That player was just voted on. Try again in a minute.";
+    return null;
+  }
+
+  // Everyone in the lobby except the player being voted on has a say, and it takes all of them.
+  // One No ends it; so does the time running out. Players who leave stop counting.
+  // A vote everyone agreed to still passes if its target's own page saw that first and left
+  // before this page heard about it; only a target who left mid-vote ends it as "gone".
+  function voteOutcome(players, vote, now = Date.now()) {
+    const ids = players.map((p) => p.id);
+    const voters = ids.filter((id) => id !== vote.target);
+    if (voters.length >= VOTE_MIN_PLAYERS - 1 && !voters.some((id) => vote.no.has(id)) && voters.every((id) => vote.yes.has(id))) return "pass";
+    if (!ids.includes(vote.target)) return "gone";
+    if (voters.length < VOTE_MIN_PLAYERS - 1) return "fail";
+    if (voters.some((id) => vote.no.has(id))) return "fail";
+    return now >= vote.endsAt ? "fail" : "open";
+  }
+
+  // Who carries out a kick once a vote passes: the longest-present player other than the one
+  // voted out. Usually the host; the next in line when the host is the one voted out.
+  function voteEnforcer(players, target) {
+    const next = players.find((p) => p.id !== target);
+    return next ? next.id : null;
+  }
+
+  // Lobbies this browser was kicked from, as { CODE: "YYYY-MM-DD" }. A kick lasts for that day.
+  function wasKicked(kicks, code, day) {
+    return Boolean(kicks && typeof kicks === "object" && kicks[code] === day);
+  }
+  function rememberKick(kicks, code, day) {
+    const out = {};
+    for (const [c, d] of Object.entries(kicks && typeof kicks === "object" ? kicks : {})) if (d === day) out[c] = d;
+    out[code] = day;
+    return out;
+  }
+
+  const pure = { MAX_PLAYERS, CODE_LENGTH, normalizeCode, codeFromSearch, lobbyLink, cleanName, randomName, unusedName, seatPicks, playersFromState, isOverCap, activeGameOf, unwrap, VOTE_MS, VOTE_COOLDOWN_MS, VOTE_MIN_PLAYERS, mayKick, voteBlocker, voteOutcome, voteEnforcer, wasKicked, rememberKick };
+  if (typeof module !== "undefined" && module.exports) { module.exports = pure; return; }
+
+  /* ---------- Browser side ---------- */
+  const cfg = root.SCRAWDLE_SUPABASE || {};
+  const games = new Map();
+  let renderGames = () => {};
+
+  // Games can register even when lobbies are switched off; they just never start.
+  function registerGame(def) {
+    if (!def || !GAME_ID_RE.test(def.id || "") || typeof def.title !== "string" || typeof def.start !== "function") {
+      throw new Error("registerGame needs { id (lowercase letters, digits, dashes), title (string), start(ctx) (function) }");
+    }
+    games.set(def.id, { description: "", minPlayers: 1, ownsRoom: false, ...def });
+    renderGames();
+  }
+  root.ScrawdleLobby = { registerGame, MAX_PLAYERS, NAME_MAX, cleanName }; // the name rules, for a game that lets someone rename
+
+  if (!cfg.url || !cfg.anonKey) return;
+  if (!root.supabase || typeof root.supabase.createClient !== "function") {
+    console.error("lobby.js: supabase-js didn't load (check the CDN <script> tag in index.html)");
+    return;
+  }
+  const client = root.supabase.createClient(cfg.url, cfg.anonKey);
+
+  const ID_KEY = "scrawdle-player-id";     // sessionStorage: one id per tab, so two tabs are two players
+  const NAME_KEY = "scrawdle-player-name"; // localStorage: your name, kept between visits
+  const CHOSEN_KEY = "scrawdle-player-name-chosen"; // localStorage: "1" once you typed a name yourself (a random one can be swapped if someone already has it)
+  function saveName(name, chosen) {
+    try {
+      localStorage.setItem(NAME_KEY, name);
+      if (chosen) localStorage.setItem(CHOSEN_KEY, "1"); else localStorage.removeItem(CHOSEN_KEY);
+    } catch (err) { /* private mode */ }
+  }
+  function nameWasChosen() {
+    try { return localStorage.getItem(CHOSEN_KEY) === "1"; } catch (err) { return false; }
+  }
+  function storedId() {
+    let id = null;
+    try { id = sessionStorage.getItem(ID_KEY); } catch (err) { /* private mode */ }
+    if (!id) {
+      // randomUUID only exists on secure pages (https or localhost); a LAN test address has none.
+      id = typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      try { sessionStorage.setItem(ID_KEY, id); } catch (err) { /* private mode */ }
+    }
+    return id;
+  }
+  function storedName() {
+    let name = "";
+    try { name = cleanName(localStorage.getItem(NAME_KEY)); } catch (err) { /* private mode */ }
+    if (!name) {
+      name = randomName();
+      saveName(name, false);
+    }
+    return name;
+  }
+
+  const JOIN_WINDOW_MS = 4000; // how long after arriving you can be dropped into a game already running
+  const me = { id: storedId(), name: storedName() };
+  const lobby = { code: null, channel: null, joinedAt: 0, players: [], game: null, cleanup: null, listeners: new Map(), watchers: new Set(), gameDef: null, ready: false,
+    kicked: new Set(), passedVotes: new Set(), vote: null, voteTimer: 0, cooldowns: new Map(), rekickedAt: new Map() };
+
+  // Lobbies this browser was kicked from today, so the same invite link can't put it back in.
+  const KICKS_KEY = "scrawdle-lobby-kicks"; // localStorage: { CODE: "YYYY-MM-DD" }
+  const today = () => { const d = new Date(); const pad = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const readKicks = () => { try { return JSON.parse(localStorage.getItem(KICKS_KEY) || "{}"); } catch (err) { return {}; } };
+  const noteKicked = (code) => { try { localStorage.setItem(KICKS_KEY, JSON.stringify(rememberKick(readKicks(), code, today()))); } catch (err) { /* private mode */ } };
+  const newId = () => (typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`);
+
+  /* ----- the screens ----- */
+  const $ = (root_, sel) => root_.querySelector(sel);
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  };
+
+  const room = el("dialog", "lobby");
+  room.id = "lobby";
+  room.setAttribute("aria-labelledby", "lobby-code");
+  room.innerHTML = `
+    <header class="app-header"><span class="wordmark">Scrawdle</span><button type="button" class="quiet" data-act="leave">Leave lobby</button></header>
+    <form class="lobby-join" autocomplete="off" novalidate>
+      <p class="lobby-join-room">Room <b class="lobby-join-code"></b></p>
+      <h1 class="lobby-join-title" id="lobby-join-title">What's your name?</h1>
+      <label class="lobby-join-label" for="lobby-join-name">Your name, as the others will see it</label>
+      <input class="lobby-join-name" id="lobby-join-name" maxlength="${NAME_MAX}" autocomplete="off" spellcheck="false" enterkeyhint="go">
+      <button type="submit" class="lobby-join-go">Join the game</button>
+      <button type="button" class="lobby-join-random">Give me a silly name</button>
+    </form>
+    <div class="lobby-connecting" role="status"><span class="lobby-connecting-dots" aria-hidden="true"><i></i><i></i><i></i></span><p class="lobby-connecting-text">Joining the room…</p></div>
+    <div class="lobby-body">
+      <p class="eyebrow">Share the link or the code with friends.</p>
+      <h1 id="lobby-code" class="lobby-title">Invite your friends</h1>
+      <div class="lobby-share">
+        <div class="lobby-link-box">
+          <input class="lobby-link" readonly aria-label="Invite link">
+          <button type="button" class="lobby-copy" data-act="copy" aria-label="Copy link" title="Copy link"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg></button>
+        </div>
+        <div class="lobby-invite">
+          <button type="button" class="btn primary" data-act="invite" aria-expanded="false" aria-haspopup="menu">Invite friends</button>
+          <div class="lobby-invite-menu" role="menu" hidden>
+            <a role="menuitem" data-invite="sms"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Text message</a>
+            <a role="menuitem" data-invite="whatsapp" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/></svg>WhatsApp</a>
+            <a role="menuitem" data-invite="email"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Email</a>
+            <button type="button" role="menuitem" data-invite="copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg><span>Copy invite</span></button>
+          </div>
+        </div>
+      </div>
+      <p class="lobby-status" role="status"></p>
+      <h2>Players <span class="lobby-count"></span></h2>
+      <ul class="lobby-players"></ul>
+      <div class="lobby-vote" role="status" hidden><p class="lobby-vote-text"></p><div class="lobby-vote-actions"><button type="button" class="btn" data-vote="yes">Yes, kick</button><button type="button" class="btn" data-vote="no">No</button></div></div>
+      <h2>Games</h2>
+      <ul class="lobby-games"></ul>
+      <p class="lobby-games-empty">No games here yet. Anyone you invite can join and see the player list.</p>
+      <div class="lobby-name"><label>Your name <input maxlength="${NAME_MAX}" autocomplete="off" spellcheck="false"></label><button type="button" class="btn lobby-shuffle">New name</button></div>
+    </div>`;
+  const stage = el("dialog", "lobby-stage");
+  stage.id = "lobby-game";
+  const stageRoot = el("div", "lobby-stage-root");
+  // During a game the lobby room is hidden, so the host gets a small Players button on the game's
+  // screen to kick someone from there.
+  const stagePlayersBtn = el("button", "lobby-stage-players quiet", "Players");
+  stagePlayersBtn.type = "button";
+  stagePlayersBtn.setAttribute("aria-expanded", "false");
+  stagePlayersBtn.hidden = true;
+  const stageMenu = el("ul", "lobby-stage-menu");
+  stageMenu.hidden = true;
+  stageMenu.setAttribute("aria-label", "Players");
+  stage.append(stageRoot, stagePlayersBtn, stageMenu);
+  document.body.append(room, stage);
+  for (const d of [room, stage]) d.addEventListener("cancel", (e) => { if (d === room && room.dataset.state === "name") return; e.preventDefault(); }); // Esc shouldn't drop you out (it may close the name step)
+  // Browsers let a second Esc close a dialog anyway. If that happens mid-lobby, put it back.
+  room.addEventListener("close", () => { if (lobby.code && !room.open) room.showModal(); else if (!lobby.code) pendingCode = null; });
+  stage.addEventListener("close", () => { if (lobby.game && !stage.open) stage.showModal(); });
+
+  const linkEl = $(room, ".lobby-link");
+  const statusEl = $(room, ".lobby-status");
+  const playersEl = $(room, ".lobby-players");
+  const countEl = $(room, ".lobby-count");
+  const nameEl = $(room, ".lobby-name input");
+  const shuffleEl = $(room, ".lobby-shuffle");
+  const gamesEl = $(room, ".lobby-games");
+  const gamesEmptyEl = $(room, ".lobby-games-empty");
+  const copyBtn = $(room, '[data-act="copy"]');
+  const voteEl = $(room, ".lobby-vote");
+  const voteTextEl = $(room, ".lobby-vote-text");
+  const voteActionsEl = $(room, ".lobby-vote-actions");
+
+  const setStatus = (text) => { statusEl.textContent = text || ""; };
+  // Which part of the room shows: "name" (someone joining picks a name), "connecting" (on the way in, until a game
+  // that draws its own lobby takes over), or "room" (the plain lobby room).
+  const joinForm = $(room, ".lobby-join"), joinName = $(room, ".lobby-join-name"), connectingText = $(room, ".lobby-connecting-text");
+  const setState = (state) => {
+    room.dataset.state = state;
+    room.setAttribute("aria-labelledby", state === "name" ? "lobby-join-title" : "lobby-code");
+  };
+  setState("room");
+  const isHost = () => lobby.players.length > 0 && lobby.players[0].id === me.id;
+  const nameOf = (id) => (lobby.players.find((p) => p.id === id) || {}).name || "A player";
+
+  // Next to each other player: Kick for the host, Vote to kick for everyone else.
+  function kickButton(p) {
+    if (isHost()) {
+      const b = el("button", "quiet lobby-kick", "Kick");
+      b.type = "button";
+      b.setAttribute("aria-label", `Kick ${p.name}`);
+      b.addEventListener("click", () => hostKick(p.id));
+      return b;
+    }
+    const b = el("button", "quiet lobby-kick", "Vote to kick");
+    b.type = "button";
+    b.setAttribute("aria-label", `Start a vote to kick ${p.name}`);
+    const why = voteBlocker({ players: lobby.players, me: me.id, target: p.id, active: Boolean(lobby.vote), cooldownUntil: lobby.cooldowns.get(p.id) || 0, inGame: Boolean(lobby.game) });
+    b.disabled = Boolean(why);
+    if (why) b.title = why;
+    b.addEventListener("click", () => callVote(p.id));
+    return b;
+  }
+
+  // A seat for each player, with a little doodle picked from their id (the same one on everyone's screen,
+  // never the same as another player's), and open seats up to the limit. Someone new pops into their seat.
+  const DOODLES = [
+    ["star", "#fff1c2", "M24 6l5.3 11.2 12.2 1.5-9 8.5 2.3 12.1L24 33.4l-10.8 5.9 2.3-12.1-9-8.5 12.2-1.5z"],
+    ["heart", "#ffd9d6", "M24 41s-15-9.6-15-20.2C9 15 13.4 11 18.3 11c2.5 0 4.6 1.2 5.7 3.1C25.1 12.2 27.2 11 29.7 11 34.6 11 39 15 39 20.8 39 31.4 24 41 24 41z"],
+    ["moon", "#e4e6ff", "M30 7a17 17 0 1 0 11 29A14 14 0 0 1 30 7z"],
+    ["cloud", "#dcefff", "M14 36h22a7 7 0 0 0 1-13.9A10 10 0 0 0 18 20a7.5 7.5 0 0 0-4 16z"],
+    ["fish", "#d6f3ef", "M8 24c6-8 14-11 22-7l10-6-2 13 2 13-10-6c-8 4-16 1-22-7zm21-2h.1"],
+    ["cat", "#ffe3c9", "M12 20l-2-10 9 5h10l9-5-2 10a14 14 0 1 1-24 0zM18 25h.1M30 25h.1M22 31h4"],
+    ["pencil", "#e6f4d9", "M10 38l3-9 20-20 6 6-20 20zM31 11l6 6M10 38l6-3"],
+    ["smile", "#f0dff5", "M34 24a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM20 22h.1M28 22h.1M19 27c2 3 8 3 10 0"],
+    ["sun", "#ffe9a8", "M33 24a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM24 5v5M24 38v5M5 24h5M38 24h5M10.6 10.6l3.5 3.5M33.9 33.9l3.5 3.5M10.6 37.4l3.5-3.5M33.9 14.1l3.5-3.5"],
+    ["flower", "#ffd6e8", "M29 13a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM39.5 20.6a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM35.5 32.9a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM22.5 32.9a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM18.5 20.6a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM28 24a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"],
+    ["ghost", "#e9e9f3", "M14 42V22a10 10 0 0 1 20 0v20l-4-3-4 3-4-3-4 3-4-3zM20 23h.1M28 23h.1"],
+    ["mushroom", "#ffd8c2", "M8 24c0-10 7-16 16-16s16 6 16 16H8zM18 24v12a6 4 0 0 0 12 0V24M18 16h.1M28 14h.1"],
+    ["bolt", "#fff5b8", "M27 6L13 27h10l-3 15 15-22H25z"],
+    ["leaf", "#d8f0cf", "M10 38C10 20 22 10 40 10c0 18-10 28-28 28zM10 38l18-18"],
+    ["rainbow", "#dff3ff", "M6 36a18 18 0 0 1 36 0M13 36a11 11 0 0 1 22 0M20 36a4 4 0 0 1 8 0"],
+    ["cherry", "#ffd2d2", "M26 30a6 6 0 1 1-12 0 6 6 0 0 1 12 0zM38 34a6 6 0 1 1-12 0 6 6 0 0 1 12 0zM20 24c0-8 4-14 10-18M32 28c-2-8-6-16-12-22"],
+    ["planet", "#e0e4ff", "M34 24a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM8 30c4 5 24 3 34-8"],
+    ["icecream", "#fbe3cf", "M16 20h16l-8 22zM16 20a8 8 0 1 1 16 0"],
+    ["note", "#e4f0e6", "M18 38a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM18 38V12l18-4v24M36 32a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM18 20l18-4"],
+    ["cactus", "#d6eedd", "M20 40V14a4 4 0 0 1 8 0v26M12 22v6a8 8 0 0 0 8 8M36 18v8a8 8 0 0 1-8 8M12 40h24"],
+  ];
+  const seenPlayers = new Set();
+  const titleEl = $(room, ".lobby-title"), eyebrowEl = $(room, ".lobby-body > .eyebrow");
+  function renderPlayers() {
+    countEl.textContent = `${lobby.players.length} of ${MAX_PLAYERS}`;
+    // The host's job is to invite; a guest's screen says they're in and who starts the game.
+    const host = lobby.players[0];
+    if (lobby.ready && !isHost() && host) { titleEl.textContent = "You're in!"; eyebrowEl.textContent = `Waiting for ${host.name} to start a game`; }
+    else { titleEl.textContent = "Invite your friends"; eyebrowEl.textContent = "Share the link or the code with friends."; }
+    const picks = seatPicks(lobby.players.map((p) => p.id), DOODLES.length);
+    const seats = lobby.players.map((p, i) => {
+      const li = el("li", "seat filled");
+      if (!seenPlayers.has(p.id)) { li.classList.add("new"); seenPlayers.add(p.id); }
+      const [name, bg, d] = DOODLES[picks[i]];
+      const icon = el("span", `seat-icon seat-icon-${name}`);
+      icon.style.setProperty("--seat-bg", bg);
+      icon.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="${d}"/></svg>`;
+      li.append(icon, el("span", "lobby-player-name", p.name));
+      const tags = el("span", "seat-tags");
+      if (i === 0) tags.append(el("span", "lobby-tag host", "host"));
+      if (p.id === me.id) tags.append(el("span", "lobby-tag", "you"));
+      li.append(tags);
+      if (p.id !== me.id && lobby.ready) { // on a seat the kick is a small × in the corner; its name stays in the tooltip and for screen readers
+        const kick = kickButton(p); kick.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; kick.title = kick.getAttribute("aria-label"); kick.classList.add("seat-kick"); li.append(kick);
+      }
+      return li;
+    });
+    // Filled seats only: the count beside the title says how many are still free.
+    playersEl.replaceChildren(...seats);
+    renderStageMenu();
+  }
+
+  function renderStageMenu() {
+    // A game that owns the room shows its own Remove buttons (ctx.kick), so it doesn't get this one.
+    const show = Boolean(lobby.game) && isHost() && lobby.players.length > 1 && !(lobby.gameDef && lobby.gameDef.ownsRoom);
+    stagePlayersBtn.hidden = !show;
+    if (!show) { stageMenu.hidden = true; stagePlayersBtn.setAttribute("aria-expanded", "false"); }
+    stageMenu.replaceChildren(...lobby.players.filter((p) => p.id !== me.id).map((p) => {
+      const li = el("li");
+      li.append(el("span", "lobby-player-name", p.name), kickButton(p));
+      return li;
+    }));
+  }
+  stagePlayersBtn.addEventListener("click", () => {
+    stageMenu.hidden = !stageMenu.hidden;
+    stagePlayersBtn.setAttribute("aria-expanded", String(!stageMenu.hidden));
+  });
+
+  // A yes/no question in the game's own box when the page has one (index.html), the browser's confirm() otherwise.
+  const askBox = (q) => (typeof root.scrawdleAsk === "function" ? root.scrawdleAsk(q) : Promise.resolve(confirm(q.title + (q.body ? "\n" + q.body : ""))));
+
+  /* ----- kicking ----- */
+  async function hostKick(target) {
+    if (!isHost() || target === me.id) return;
+    if (!await askBox({ title: `Kick ${nameOf(target)}?`, body: "They won't be able to rejoin this lobby today.", yes: "Kick", no: "Keep them" })) return;
+    lobby.kicked.add(target);
+    send("lobby:kick", { target, by: me.id });
+  }
+
+  function beKicked(byVote) {
+    const code = lobby.code;
+    leave();
+    if (code) noteKicked(code);
+    homeError(byVote ? "You were voted out of that lobby." : "You were removed from that lobby.");
+  }
+
+  function onKick(message) {
+    const body = unwrap(message) || {};
+    if (!mayKick(lobby.players, body, lobby.passedVotes)) return;
+    lobby.kicked.add(body.target);
+    if (body.target === me.id) { beKicked(body.reason === "vote"); return; }
+    if (body.reason !== "vote") setStatus(`${nameOf(body.target)} was removed from the lobby.`);
+  }
+
+  // Someone kicked earlier who shows up again (the same tab, after clearing what this browser
+  // remembers) is kicked again by the host. Not more than once every few seconds per player.
+  function rekickReturning() {
+    if (!isHost()) return;
+    for (const p of lobby.players) {
+      if (p.id === me.id || !lobby.kicked.has(p.id) || Date.now() - (lobby.rekickedAt.get(p.id) || 0) < 5000) continue;
+      lobby.rekickedAt.set(p.id, Date.now());
+      send("lobby:kick", { target: p.id, by: me.id });
+    }
+  }
+
+  /* ----- votes to kick ----- */
+  async function callVote(target) {
+    const why = voteBlocker({ players: lobby.players, me: me.id, target, active: Boolean(lobby.vote), cooldownUntil: lobby.cooldowns.get(target) || 0, inGame: Boolean(lobby.game) });
+    if (why) { setStatus(why); return; }
+    if (!await askBox({ title: `Vote to kick ${nameOf(target)}?`, body: "Everyone else in the lobby has to agree.", yes: "Start the vote", no: "Never mind" })) return;
+    send("lobby:votekick", { id: newId(), target, by: me.id });
+  }
+
+  function onVoteKick(message) {
+    const body = unwrap(message) || {};
+    if (typeof body.id !== "string" || typeof body.target !== "string" || typeof body.by !== "string") return;
+    const why = voteBlocker({ players: lobby.players, me: body.by, target: body.target, active: Boolean(lobby.vote), cooldownUntil: lobby.cooldowns.get(body.target) || 0, inGame: Boolean(lobby.game) });
+    if (why) return;
+    lobby.vote = { id: body.id, target: body.target, by: body.by, targetName: nameOf(body.target), byName: nameOf(body.by), yes: new Set([body.by]), no: new Set(), endsAt: Date.now() + VOTE_MS };
+    clearInterval(lobby.voteTimer);
+    lobby.voteTimer = setInterval(checkVote, 1000);
+    setStatus("");
+    renderPlayers();
+    checkVote();
+  }
+
+  function castBallot(yes) {
+    const v = lobby.vote;
+    if (!v || v.target === me.id) return;
+    send("lobby:ballot", { id: v.id, voter: me.id, yes });
+  }
+
+  function onBallot(message) {
+    const body = unwrap(message) || {};
+    const v = lobby.vote;
+    if (!v || body.id !== v.id || typeof body.voter !== "string" || body.voter === v.target || typeof body.yes !== "boolean") return;
+    v.yes.delete(body.voter);
+    v.no.delete(body.voter);
+    (body.yes ? v.yes : v.no).add(body.voter);
+    checkVote();
+  }
+
+  // Every page works out the result from the same votes, so they all agree on it.
+  function checkVote() {
+    const v = lobby.vote;
+    if (!v) return;
+    const outcome = voteOutcome(lobby.players, v);
+    if (outcome === "open") { renderVote(); return; }
+    endVote();
+    if (outcome === "pass") {
+      lobby.passedVotes.add(`${v.id}|${v.target}`);
+      lobby.kicked.add(v.target);
+      if (v.target === me.id) { beKicked(true); return; }
+      setStatus(`${v.targetName} was voted out of the lobby.`);
+      if (voteEnforcer(lobby.players, v.target) === me.id) send("lobby:kick", { target: v.target, by: me.id, reason: "vote", voteId: v.id });
+    } else if (outcome === "fail") {
+      lobby.cooldowns.set(v.target, Date.now() + VOTE_COOLDOWN_MS);
+      renderPlayers(); // again, now that the wait is set, so that player's Vote to kick button is off
+      setTimeout(renderPlayers, VOTE_COOLDOWN_MS + 50); // and it comes back once the wait is over
+      setStatus(v.target === me.id ? "The vote to kick you didn't pass." : `The vote to kick ${v.targetName} didn't pass.`);
+    } else {
+      setStatus(`${v.targetName} left, so the vote ended.`);
+    }
+  }
+
+  function endVote() {
+    clearInterval(lobby.voteTimer);
+    lobby.voteTimer = 0;
+    lobby.vote = null;
+    renderVote();
+    renderPlayers();
+  }
+
+  function renderVote() {
+    const v = lobby.vote;
+    voteEl.hidden = !v;
+    if (!v) return;
+    const left = Math.max(0, Math.ceil((v.endsAt - Date.now()) / 1000));
+    const voters = lobby.players.filter((p) => p.id !== v.target);
+    const agreed = voters.filter((p) => v.yes.has(p.id)).length;
+    const tally = `${agreed} of ${voters.length} agree · ${left}s left`;
+    const mine = v.yes.has(me.id) ? "yes" : v.no.has(me.id) ? "no" : null;
+    if (v.target === me.id) voteTextEl.textContent = `${v.byName} started a vote to kick you. ${tally}.`;
+    else if (v.by === me.id) voteTextEl.textContent = `You started a vote to kick ${v.targetName}. ${tally}.`;
+    else voteTextEl.textContent = `${v.byName} wants to kick ${v.targetName}. Everyone else has to agree. ${tally}.`;
+    voteActionsEl.hidden = v.target === me.id || v.by === me.id;
+    for (const b of voteActionsEl.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.vote === mine));
+  }
+  for (const b of voteActionsEl.querySelectorAll("button")) b.addEventListener("click", () => castBallot(b.dataset.vote === "yes"));
+
+  renderGames = function () {
+    const list = [...games.values()];
+    gamesEmptyEl.hidden = list.length > 0;
+    gamesEl.replaceChildren(...list.map((game) => {
+      const li = el("li");
+      const text = el("span", "lobby-game-text");
+      text.append(el("b", "", game.title));
+      if (game.description) text.append(el("small", "", game.description));
+      li.append(text);
+      const short = lobby.players.length < game.minPlayers;
+      if (isHost()) {
+        const start = el("button", "btn", short ? `Needs ${game.minPlayers} players` : "Start");
+        start.type = "button";
+        start.disabled = short || !lobby.ready;
+        start.addEventListener("click", () => send("lobby:start", { game: game.id }));
+        li.append(start);
+      } else {
+        li.append(el("small", "lobby-wait", "The host starts games"));
+      }
+      return li;
+    }));
+  };
+
+  /* ----- talking to the lobby's channel ----- */
+  function send(event, payload) {
+    if (!lobby.channel) return Promise.resolve();
+    return lobby.channel.send({ type: "broadcast", event, payload });
+  }
+  const myMeta = () => ({ id: me.id, name: me.name, joinedAt: lobby.joinedAt, game: lobby.game });
+  const track = () => (lobby.channel ? lobby.channel.track(myMeta()) : Promise.resolve());
+
+  function onSync() {
+    lobby.players = playersFromState(lobby.channel.presenceState());
+    if (!lobby.players.some((p) => p.id === me.id)) return; // our own entry hasn't arrived yet
+    if (isOverCap(lobby.players, me.id)) {
+      leave();
+      homeError(`That lobby is full (${MAX_PLAYERS} players).`);
+      return;
+    }
+    lobby.ready = true;
+    freshenName();
+    renderPlayers();
+    renderGames();
+    rekickReturning();
+    checkVote(); // someone leaving can settle a vote
+    for (const fn of lobby.watchers) fn(lobby.players.slice());
+    // Joining while a game is already on drops you into it. That only counts for a few seconds
+    // after arriving (the other players' entries can trickle in after your own), and stops as soon
+    // as any game starts or ends here, so a stale entry can't pull someone back into a finished game.
+    const running = activeGameOf(lobby.players);
+    const canDropIn = running && games.has(running) && (games.get(running).ownsRoom || Date.now() - lobby.joinedAt < JOIN_WINDOW_MS);
+    if (lobby.autoLaunch && canDropIn && !lobby.game) launch(running);
+    // The host of a new lobby goes straight into the game that draws its own lobby.
+    if (lobby.autoStart && isHost() && !lobby.game) { const id = lobby.autoStart; lobby.autoStart = null; send("lobby:start", { game: id }); }
+    // Nothing took over the screen: show the plain lobby room.
+    if (!lobby.game && !lobby.autoStart && room.dataset.state === "connecting") {
+      clearTimeout(lobby.roomTimer);
+      lobby.roomTimer = setTimeout(() => { if (lobby.code && !lobby.game && room.dataset.state === "connecting") setState("room"); }, 2500);
+    }
+  }
+
+  function onStart(message) {
+    const body = unwrap(message) || {};
+    if (typeof body.game === "string") launch(body.game);
+  }
+
+  function onGameMessage(message) {
+    const body = unwrap(message) || {};
+    if (body.game !== lobby.game || typeof body.event !== "string") return;
+    for (const fn of lobby.listeners.get(body.event) || []) fn(body.data, body.from);
+  }
+
+  function makeContext() {
+    const gameId = lobby.game;
+    const subscriptions = [];
+    const self = { id: me.id, name: me.name }; // the game's copy of ctx.me, kept current by rename()
+    return {
+      container: stageRoot,
+      code: lobby.code,
+      me: self,
+      players: () => lobby.players.map((p) => ({ ...p })),
+      isHost,
+      onPlayersChange(fn) {
+        lobby.watchers.add(fn);
+        const off = () => lobby.watchers.delete(fn);
+        subscriptions.push(off);
+        return off;
+      },
+      send: (event, data) => send("game", { game: gameId, event, data, from: me.id }),
+      on(event, fn) {
+        if (!lobby.listeners.has(event)) lobby.listeners.set(event, new Set());
+        lobby.listeners.get(event).add(fn);
+        const off = () => lobby.listeners.get(event) && lobby.listeners.get(event).delete(fn);
+        subscriptions.push(off);
+        return off;
+      },
+      kick: (id) => hostKick(id),
+      rename(name) {
+        const clean = cleanName(name);
+        if (!clean || clean === me.name) return me.name;
+        me.name = clean;
+        self.name = clean;
+        nameEl.value = clean;
+        saveName(clean, true);
+        const mine = lobby.players.find((p) => p.id === me.id);
+        if (mine) mine.name = clean;
+        for (const fn of lobby.watchers) fn(lobby.players.slice()); // this screen at once; the others on the presence update
+        track(); // Supabase allows only a few presence updates every 30 seconds
+        return clean;
+      },
+      end: (message) => send("lobby:end", { message: typeof message === "string" ? message.slice(0, 140) : "" }),
+      _unsubscribeAll: () => subscriptions.forEach((off) => off()),
+    };
+  }
+
+  async function launch(gameId) {
+    const game = games.get(gameId);
+    if (!game || lobby.game) return; // unknown game, or one is already running
+    lobby.autoLaunch = false;
+    lobby.game = gameId;
+    lobby.gameDef = game;
+    // Votes to kick happen in the lobby room, which the game covers, so one in progress stops here.
+    if (lobby.vote) { endVote(); setStatus("The vote to kick was called off because a game started."); }
+    renderPlayers();
+    stageRoot.replaceChildren();
+    if (!stage.open) stage.showModal();
+    track();
+    const context = makeContext();
+    lobby.context = context;
+    try {
+      const cleanup = await game.start(context);
+      lobby.cleanup = typeof cleanup === "function" ? cleanup : null;
+    } catch (err) {
+      console.error(`lobby.js: game "${gameId}" failed to start`, err);
+      setStatus(`${game.title} couldn't start. Try again, or refresh the page.`);
+      send("lobby:end", {});
+    }
+  }
+
+  // A game that owns the room closes it: everyone goes back home (with the game's message, for everyone but the host).
+  function onEnd(message) {
+    const owned = Boolean(lobby.gameDef && lobby.gameDef.ownsRoom);
+    const body = unwrap(message) || {};
+    const wasHost = isHost();
+    stopGame();
+    if (!owned) return;
+    leave();
+    if (!wasHost) notice(typeof body.message === "string" && body.message ? body.message : "The host closed the room.");
+  }
+
+  function stopGame() {
+    lobby.autoLaunch = false;
+    if (!lobby.game) return;
+    try { if (lobby.cleanup) lobby.cleanup(); } catch (err) { console.error("lobby.js: game cleanup failed", err); }
+    if (lobby.context) lobby.context._unsubscribeAll();
+    lobby.cleanup = null;
+    lobby.context = null;
+    lobby.game = null;
+    lobby.gameDef = null;
+    lobby.listeners.clear();
+    lobby.watchers.clear();
+    stageRoot.replaceChildren();
+    if (stage.open) stage.close();
+    if (lobby.code) setState("room");
+    track();
+    renderPlayers();
+    renderGames();
+  }
+
+  /* ----- entering and leaving ----- */
+  function enter(code) {
+    if (lobby.code) leave();
+    lobby.code = code;
+    lobby.joinedAt = Date.now();
+    lobby.players = [];
+    lobby.ready = false;
+    lobby.autoLaunch = true;
+    lobby.kicked = new Set();
+    lobby.passedVotes = new Set();
+    lobby.cooldowns = new Map();
+    lobby.rekickedAt = new Map();
+    linkEl.value = lobbyLink(location.origin, location.pathname, code);
+    nameEl.value = me.name;
+    connectingText.textContent = `Joining room ${code}…`;
+    setState("connecting");
+    setStatus("Connecting…");
+    showCopied(false);
+    renderPlayers();
+    renderGames();
+    history.replaceState(null, "", `${location.pathname}?${code}`);
+
+    const channel = client.channel(`lobby-${code}`, { config: { presence: { key: me.id }, broadcast: { self: true } } });
+    lobby.channel = channel;
+    // Events can still arrive from a channel we've already left (untracking fires one more sync),
+    // so every handler checks this is still the lobby we're in.
+    const live = (fn) => (...args) => { if (lobby.channel === channel) fn(...args); };
+    channel.on("presence", { event: "sync" }, live(onSync));
+    channel.on("broadcast", { event: "lobby:start" }, live(onStart));
+    channel.on("broadcast", { event: "lobby:end" }, live(onEnd));
+    channel.on("broadcast", { event: "game" }, live(onGameMessage));
+    channel.on("broadcast", { event: "lobby:kick" }, live(onKick));
+    channel.on("broadcast", { event: "lobby:votekick" }, live(onVoteKick));
+    channel.on("broadcast", { event: "lobby:ballot" }, live(onBallot));
+    channel.subscribe(async (status) => {
+      if (lobby.channel !== channel) return;
+      if (status === "SUBSCRIBED") {
+        setStatus("");
+        await track();
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        setStatus("Connection trouble. Trying to reconnect…");
+      }
+    });
+    if (!room.open) room.showModal();
+  }
+
+  function leave() {
+    lobby.autoStart = null;
+    clearTimeout(lobby.roomTimer);
+    stopGame();
+    if (lobby.vote) endVote();
+    setStatus("");
+    const channel = lobby.channel;
+    lobby.channel = null;
+    lobby.code = null;
+    lobby.players = [];
+    lobby.ready = false;
+    if (channel) {
+      Promise.resolve(channel.untrack()).catch(() => {});
+      client.removeChannel(channel);
+    }
+    if (room.open) room.close();
+    history.replaceState(null, "", location.pathname);
+  }
+
+  /* ----- the home screen's Lobby card ----- */
+  const card = el("section", "home-choice lobby-card");
+  card.innerHTML = `
+    <h2>Lobby</h2>
+    <p>Make a private room, then invite friends with a link.</p>
+    <button type="button" class="btn primary" data-act="create">Create Lobby</button>
+    <p class="lobby-error" role="alert" hidden></p>`;
+  const createBtn = $(card, '[data-act="create"]');
+  const errorEl = $(card, ".lobby-error");
+
+  function homeError(text) {
+    errorEl.textContent = text || "";
+    errorEl.hidden = !text;
+  }
+  // A message for someone who joined: beside Join a game, where they typed the code (under Host a game if
+  // the page has no join form).
+  function notice(text) {
+    const help = document.getElementById("join-help");
+    if (help) help.textContent = text || ""; else homeError(text);
+  }
+  function busy(on) {
+    createBtn.disabled = on;
+  }
+
+  async function createLobby() {
+    homeError("");
+    busy(true);
+    try {
+      const { data, error } = await client.rpc("create_lobby");
+      const code = normalizeCode(data);
+      if (error || !code) throw error || new Error("no code returned");
+      lobby.autoStart = ([...games.values()].find((g) => g.ownsRoom) || {}).id || null;
+      enter(code);
+    } catch (err) {
+      console.error("lobby.js: create_lobby failed", err);
+      homeError("Couldn't make a lobby. Check your connection and try again.");
+    } finally {
+      busy(false);
+    }
+  }
+
+  async function joinLobby(raw) {
+    notice("");
+    const code = normalizeCode(raw);
+    if (!code) { notice(`Codes are ${CODE_LENGTH} letters, like BKQZ.`); return false; }
+    if (wasKicked(readKicks(), code, today())) { notice("You were removed from that room, so you can't rejoin it today."); return false; }
+    busy(true);
+    try {
+      const { data, error } = await client.rpc("lobby_exists", { lobby_code: code });
+      if (error) throw error;
+      if (!data) { notice("No game has that code. Check the letters on the big screen and try again."); return false; }
+      askName(code);
+      return true;
+    } catch (err) {
+      console.error("lobby.js: lobby_exists failed", err);
+      notice("Couldn't check that code. Check your connection and try again.");
+      return false;
+    } finally {
+      busy(false);
+    }
+  }
+
+  createBtn.addEventListener("click", createLobby);
+
+  // Someone joining picks a name first (the one they typed last time is filled in), then goes in.
+  let pendingCode = null;
+  function askName(code) {
+    if (lobby.code) leave();
+    pendingCode = code;
+    $(room, ".lobby-join-code").textContent = code;
+    joinName.value = nameWasChosen() ? me.name : "";
+    joinName.placeholder = me.name;
+    setState("name");
+    if (!room.open) room.showModal();
+    joinName.focus();
+  }
+  joinForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!pendingCode) return;
+    const typed = cleanName(joinName.value);
+    me.name = typed || cleanName(joinName.placeholder) || randomName();
+    saveName(me.name, Boolean(typed));
+    const code = pendingCode;
+    pendingCode = null;
+    enter(code);
+  });
+  $(room, ".lobby-join-random").addEventListener("click", () => { joinName.value = randomName(); joinName.focus(); });
+  // Home's "Join a game" form (#join-form, #join-code). Caught here, before any other handler, so 4- and 5-letter codes
+  // go through the name step instead of the page's own check.
+  // A code that isn't letters of the right length is left to the page's own handler, which says how it should look.
+  document.addEventListener("submit", (e) => {
+    if (!e.target || e.target.id !== "join-form") return;
+    const input = document.getElementById("join-code");
+    const code = normalizeCode(input ? input.value : "");
+    if (!code) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    joinLobby(code);
+  }, true);
+
+  $(room, '[data-act="leave"]').addEventListener("click", () => { pendingCode = null; if (lobby.code) leave(); else if (room.open) room.close(); });
+  // A copy icon at the end of the link box, like GitHub's. It turns into a check for a moment once copied.
+  const COPY_ICON = copyBtn.innerHTML;
+  const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';
+  let copiedTimer = 0;
+  function showCopied(on, label = "Copied!") {
+    clearTimeout(copiedTimer);
+    copyBtn.innerHTML = on ? CHECK_ICON : COPY_ICON;
+    copyBtn.classList.toggle("copied", on);
+    copyBtn.title = on ? label : "Copy link";
+    copyBtn.setAttribute("aria-label", on ? label : "Copy link");
+    if (on) copiedTimer = setTimeout(() => showCopied(false), 2000);
+  }
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(linkEl.value);
+      showCopied(true);
+    } catch (err) {
+      linkEl.select();
+      showCopied(true, "Press Ctrl+C to copy");
+    }
+  });
+  linkEl.addEventListener("focus", () => linkEl.select());
+  // Invite friends, with the invite already written. Where the browser has a share menu (phones, and
+  // some laptop browsers), it opens that, so a friend can be picked in Messages, WhatsApp, and so on.
+  // Elsewhere it opens a small menu of its own: a text message, WhatsApp, email, or copying the invite.
+  // No phone numbers or addresses ever reach the game; the player's own apps handle who it goes to.
+  const inviteBtn = $(room, '[data-act="invite"]');
+  const inviteMenu = $(room, ".lobby-invite-menu");
+  const inviteText = () => `Join my Scrawdle lobby! ${linkEl.value}`; // the link is enough; no code to type
+  // A small pop-up under the button. It closes when an option is picked, on a click outside it, or on Esc.
+  const showInviteMenu = (open) => {
+    inviteMenu.hidden = !open;
+    inviteBtn.setAttribute("aria-expanded", String(open));
+    if (open) inviteMenu.querySelector("[role=menuitem]").focus();
+  };
+  document.addEventListener("pointerdown", (e) => {
+    if (!inviteMenu.hidden && !e.target.closest(".lobby-invite")) showInviteMenu(false);
+  });
+  room.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !inviteMenu.hidden) { showInviteMenu(false); inviteBtn.focus(); }
+  });
+  for (const link of inviteMenu.querySelectorAll("a")) link.addEventListener("click", () => setTimeout(() => showInviteMenu(false), 0));
+  inviteBtn.addEventListener("click", async () => {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "Join my Scrawdle lobby", text: "Join my Scrawdle lobby!", url: linkEl.value });
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return; // they closed the share menu
+      }
+    }
+    const text = encodeURIComponent(inviteText());
+    $(inviteMenu, '[data-invite="sms"]').href = `sms:?&body=${text}`; // "?&" works on both iPhone and Android
+    $(inviteMenu, '[data-invite="whatsapp"]').href = `https://wa.me/?text=${text}`;
+    $(inviteMenu, '[data-invite="email"]').href = `mailto:?subject=${encodeURIComponent("Join my Scrawdle lobby")}&body=${text}`;
+    showInviteMenu(inviteMenu.hidden);
+  });
+  const copyInviteBtn = $(inviteMenu, '[data-invite="copy"]');
+  const copyInviteLabel = $(copyInviteBtn, "span");
+  copyInviteBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(inviteText());
+      copyInviteLabel.textContent = "Copied!";
+      setTimeout(() => { showInviteMenu(false); copyInviteLabel.textContent = "Copy invite"; }, 700);
+    } catch (err) {
+      linkEl.select();
+      copyInviteLabel.textContent = "Press Ctrl+C";
+    }
+  });
+  room.addEventListener("close", () => { inviteMenu.hidden = true; inviteBtn.setAttribute("aria-expanded", "false"); copyInviteLabel.textContent = "Copy invite"; });
+  nameEl.addEventListener("change", () => {
+    const name = cleanName(nameEl.value) || me.name;
+    nameEl.value = name;
+    if (name === me.name) return;
+    me.name = name;
+    saveName(name, true);
+    track(); // Supabase allows only a few presence updates every 30 seconds, so this is on change, not each keystroke
+  });
+  const otherNames = () => lobby.players.filter((p) => p.id !== me.id).map((p) => p.name);
+  // The name you were given (not one you typed) is already on someone who got here first: take another.
+  function freshenName() {
+    if (nameWasChosen()) return;
+    const mine = lobby.players.findIndex((p) => p.id === me.id);
+    const clash = lobby.players.findIndex((p) => p.name === me.name);
+    if (mine < 0 || clash < 0 || clash >= mine) return;
+    me.name = unusedName(otherNames());
+    lobby.players[mine].name = me.name;
+    nameEl.value = me.name;
+    saveName(me.name, false);
+    track();
+  }
+  let shuffleTimer = 0;
+  shuffleEl.addEventListener("click", () => {
+    me.name = unusedName(otherNames().concat(me.name));
+    nameEl.value = me.name;
+    const mine = lobby.players.find((p) => p.id === me.id);
+    if (mine) mine.name = me.name;
+    saveName(me.name, false);
+    renderPlayers();
+    clearTimeout(shuffleTimer);
+    shuffleTimer = setTimeout(track, 600); // a few quick presses send one presence update
+  });
+  window.addEventListener("pagehide", () => { if (lobby.channel) client.removeChannel(lobby.channel); });
+
+  const slot = document.querySelector(".home-actions") || document.querySelector("#setup .home-body") || document.getElementById("setup");
+  if (slot) slot.append(card);
+
+  // A link like /?BCDFG goes straight into that lobby.
+  const linked = codeFromSearch(location.search);
+  if (linked) {
+    joinLobby(linked).then((joined) => {
+      if (!joined) history.replaceState(null, "", location.pathname);
+    });
+  }
+})(typeof window !== "undefined" ? window : globalThis);

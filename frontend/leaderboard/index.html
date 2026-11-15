@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Today's leaderboard · Scrawdle</title>
+  <meta name="theme-color" content="#0B0926" />
+  <link rel="preload" href="../fonts/shrikhand.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../fonts/big-shoulders-display.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- tokens.css in a lower layer (older pieces still read it); the TV game-show look is stage.css (tokens and fonts),
+       then pages.css, shared with the other page. Paths start with ../ so they work with or without a trailing slash.
+       The show is always the night studio, so there is no light/dark switch here. -->
+  <style>
+    @layer legacy;
+    @import url("../tokens.css") layer(legacy);
+  </style>
+  <link rel="stylesheet" href="../stage.css" />
+  <link rel="stylesheet" href="../pages.css" />
+</head>
+<body>
+
+  <!-- leaderboard.js draws the page into this element. -->
+  <main id="page" class="lb-page"></main>
+  <noscript><p style="padding:24px;text-align:center">The leaderboard needs JavaScript.</p></noscript>
+
+  <script src="../votes.js"></script>
+  <script src="../leaderboard.js"></script>
+  <!-- Supabase's client, the project's keys, then publish.js, which sets window.scrawdlePublicGallery and
+       window.scrawdleHasPosted. Same order as the Public drawings page. -->
+  <script src="../vendor/supabase.js"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="../publish.js"></script>
+  <script>ScrawdleLeaderboard.show(document.getElementById("page"));</script>
+</body>
+</html>

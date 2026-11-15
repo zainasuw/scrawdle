@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+node_modules/
+
+# Local design notes and working files (kept on this computer, not on GitHub)
+PRODUCT.md
+.impeccable/surfaces/
+.impeccable/questions/
+.impeccable/review/
+.impeccable/mocks/
+.DS_Store

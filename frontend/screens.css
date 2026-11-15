@@ -609,9 +609,13 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   /* done for today: the word itself on the tiles, a teal tick on the board */
   #setup .daily-card.is-done .daily-board .daily-tiles { display: flex; }
   #setup .daily-card.is-done .daily-caption { color: var(--bulb); font-weight: 700; }
-  #setup .daily-card.is-done::before {
-    z-index: 3; top: calc(var(--u) * 3); left: calc(var(--u) * 3); width: calc(var(--u) * 3); height: calc(var(--u) * 3);
-    background-size: calc(var(--u) * 2);
+  /* the tick rides in front of the caption, so a long word can use the whole board without running into it */
+  #setup .daily-card.is-done::before { content: none; }
+  #setup .daily-card.is-done .daily-caption::before {
+    content: ""; display: inline-block; width: calc(var(--u) * 1.9); height: calc(var(--u) * 1.9);
+    margin-right: calc(var(--u) * .6); vertical-align: calc(var(--u) * -.45); border-radius: 50%;
+    background: var(--teal) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 12.5l4 4 8-9' fill='none' stroke='%231B1240' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / calc(var(--u) * 1.3) no-repeat;
+    box-shadow: 0 2px 6px rgb(0 0 0 / .4);
   }
   /* the date (or when the next word comes) and the streak: one line straight under the board's key */
   #setup .home-status {

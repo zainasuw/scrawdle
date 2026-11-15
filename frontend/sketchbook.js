@@ -17,7 +17,7 @@
     dialog.id = "sketchbook";
     dialog.setAttribute("aria-labelledby", "sketchbook-title");
     dialog.innerHTML = `
-      <header class="app-header"><span class="wordmark">Scrawdle</span><button class="quiet" type="button" data-act="close">Back</button></header>
+      <header class="app-header"><span class="wordmark">Scrawdle</span><button class="icon-key home-key" type="button" data-act="close" aria-label="Back to home" title="Back to home"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M5 15L16 5l11 10"/><path d="M8 13v14h16V13"/><path d="M13.5 27v-7h5v7"/></svg></button></header>
       <div class="gallery-heading"><h2 id="sketchbook-title">My drawings</h2></div>
       <p class="gallery-note" role="status"></p>
       <ul class="gallery-grid"></ul>`;

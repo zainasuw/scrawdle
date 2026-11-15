@@ -490,8 +490,10 @@
 #lobby-game .pp-pgallery .pp-card img { border-radius: 11px; }
 #lobby-game .pp-pgallery .pp-card-letter { width: 34px; height: 34px; font-size: 19px; left: -10px; top: -10px; }
 #lobby-game .pp-vote-hint { margin: 0; font-weight: 600; font-size: 14px; color: var(--text-2); max-width: 34ch; }
-/* the title, the timer, the drawings and the hint are one group, centred in the pad (no empty band inside it) */
-#lobby-game .pp-phone main.pp-vote { justify-content: center; padding-bottom: 24px; }
+/* the title and timer right under the pad's top bar, the drawings straight after (no empty band above them); an odd
+ * last drawing sits in the middle of its row, not alone in the left column */
+#lobby-game .pp-phone main.pp-vote { padding-bottom: 24px; }
+#lobby-game .pp-pgallery > .pp-card:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc((100% - 16px) / 2); }
 #lobby-game .pp-pvote-word { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 2px 0 0; font-weight: 700; font-size: 15px; color: var(--text-2); }
 
 /* Result and final (phone) */

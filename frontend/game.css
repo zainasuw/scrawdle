@@ -113,15 +113,15 @@ html:has(#slot:not([hidden])) #game { display: none; }
 @keyframes word-on { from { transform: translateY(6px); opacity: 0; } }
 
 /* ---------- The canvas: white, in the pad's dark bezel ---------- */
+/* Phones: the canvas is 3:2 (saved drawings, replay and download depend on it), so on a tall pad it is as wide as it
+   can be but not as tall as the room it has. The bezel hugs the canvas (the holder's own dark ring, as on the party
+   pad) and the canvas sits in the middle of that room, instead of in a dark letterbox nearly twice its height. */
 #game .easel-board {
   position: relative;
   container-type: size;
   display: grid; place-items: center;
   min-height: 0; min-width: 0;
-  /* the pad's screen: dark round the 3:2 canvas, so spare room reads as the bezel, not as gaps */
   border-radius: 24px;
-  background: radial-gradient(ellipse 80% 60% at 50% 50%, #1A1248, #0E0A2C);
-  box-shadow: inset 0 2px 8px rgb(0 0 0 / .6), 0 1px 0 rgb(255 255 255 / .12);
 }
 /* The canvas is 3:2 with no padding or border (pointer mapping uses clientLeft/clientWidth). The bezel is its holder's
    border, and the holder is white inside it, so the canvas's square corners sit inside a rounded white screen. */
@@ -132,7 +132,7 @@ html:has(#slot:not([hidden])) #game { display: none; }
   border: 6px solid #120C35;
   border-radius: 24px;
   background: #fff;
-  box-shadow: 0 10px 22px -10px rgb(0 0 0 / .7);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / .1), 0 14px 26px -10px rgb(0 0 0 / .75);
 }
 #game #board {
   display: block; width: 100%; height: auto; aspect-ratio: 3 / 2;
@@ -333,6 +333,12 @@ html:has(#slot:not([hidden])) #game { display: none; }
     padding: 24px 28px 26px;
   }
   #game::before { inset: 10px; border-radius: 40px; }
+  /* wide: the pad's screen is dark round the canvas, so the little spare room either side reads as the bezel */
+  #game .easel-board {
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, #1A1248, #0E0A2C);
+    box-shadow: inset 0 2px 8px rgb(0 0 0 / .6), 0 1px 0 rgb(255 255 255 / .12);
+  }
+  #game .stamp { box-shadow: 0 10px 22px -10px rgb(0 0 0 / .7); }
   #game .game-top { align-items: center; }
   #game .game-top > .wm-slot { display: block; flex: none; }
   #game .game-top .wordmark {

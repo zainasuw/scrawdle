@@ -533,18 +533,55 @@
       $("home-streak").hidden = !streakText;
     }
 
-    // The marquee's tiles on the stage: six blank "?" tiles, or the word once it's drawn (a space is a gap between
-    // words). Phones show three blank tiles, and none once the word is done (screens.css).
+    // The marquee's tiles on the stage: six blank "?" tiles, or the word once it's drawn, set like the TV's word board:
+    // balanced rows (ScrawdlePartyRules.wordRows: an article stays with its word, a compound never breaks), the row
+    // count whose tiles come out biggest in the board's screen (another row has to buy 8%), never bigger than a blank
+    // tile. screens.css sizes the tiles from --cols (the widest row, in tile widths) and --rows. Phones show three blank
+    // tiles, and none once the word is done.
     function showDailyTiles(word) {
       const box = $("daily-tiles");
-      const chars = word ? [...word.replace(/\u00a0/g, " ").trim()] : [..."??????"];
-      box.replaceChildren(...chars.map((ch) => {
-        const t = document.createElement(ch === " " ? "b" : "i");
-        if (ch !== " ") t.textContent = ch;
-        return t;
+      box.dataset.word = word || "";
+      const R = window.ScrawdlePartyRules;
+      const NBSP = "\u00a0";
+      const text = (word || "").trim();
+      let rows = [["??????"]];
+      if (text) {
+        const board = box.parentElement, cs = getComputedStyle(board);
+        const w = board.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const h = parseFloat(cs.minHeight) - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - $("daily-caption").offsetHeight - (parseFloat(cs.rowGap) || 0);
+        let cap = Infinity;
+        if (w > 0 && h > 0) {
+          const probe = document.createElement("span");
+          probe.style.cssText = "position: absolute; visibility: hidden; width: 1px; height: var(--tile-h)";
+          board.append(probe); cap = probe.offsetHeight / 1.3 || Infinity; probe.remove();
+        }
+        // a row `u` wide in R.rowWidth's units (letters, and .375 for each space): 1.12 tile widths a letter
+        const size = (u, k) => (w > 0 && h > 0 ? Math.min(cap, w / (1.12 * u - 0.12), h / (k * 1.3 + (k - 1) * 0.22 + 0.1)) : 1 / u);
+        rows = R && R.wordRows ? R.wordRows(text, { gap: 0.375, size }) : [text.split(/ +/)];
+      }
+      let cols = 0;
+      box.replaceChildren(...rows.map((row) => {
+        const line = document.createElement("span");
+        line.className = "daily-row";
+        const chars = [...row.join(" ").split(NBSP).join(" ")];
+        for (const ch of chars) {
+          const t = document.createElement(ch === " " ? "b" : "i");
+          if (ch !== " ") t.textContent = ch;
+          line.append(t);
+        }
+        const spaces = chars.filter((ch) => ch === " ").length;
+        cols = Math.max(cols, (chars.length - spaces) + spaces * 0.3 + (chars.length - 1) * 0.12);
+        return line;
       }));
-      box.style.setProperty("--n", String(chars.length));
+      box.style.setProperty("--cols", cols.toFixed(2));
+      box.style.setProperty("--rows", String(rows.length));
     }
+    // A new window size can want a different row count for the drawn word.
+    let dailyFit = 0;
+    addEventListener("resize", () => {
+      cancelAnimationFrame(dailyFit);
+      dailyFit = requestAnimationFrame(() => { const word = $("daily-tiles").dataset.word; if (word && !setupEl.hidden) showDailyTiles(word); });
+    });
 
     // A tab left open on home past midnight: when it's looked at again on a new day, home is rebuilt for today.
     document.addEventListener("visibilitychange", () => {

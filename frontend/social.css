@@ -648,7 +648,7 @@
 #lobby-game .pp-steps li { display: flex; align-items: center; gap: calc(var(--u) * 1); font-weight: 600; font-size: calc(var(--u) * 1.6); color: var(--text); }
 #lobby-game .pp-steps b {
   width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); flex: none; display: grid; place-items: center; border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #FFE08A, var(--gold) 70%); color: var(--ink); box-shadow: 0 0 calc(var(--u) * .8) rgb(255 194 61 / .45);
+  background: linear-gradient(180deg, #FFF8E8 0 49.4%, #F1E2C2 50.6% 100%); color: var(--ink); box-shadow: 0 calc(var(--u) * .2) 0 #B9945A, 0 calc(var(--u) * .3) calc(var(--u) * .6) rgb(0 0 0 / .4);
   font: 900 calc(var(--u) * 1.6)/1 var(--font-board);
 }
 #lobby-game .pp-steps strong { font-weight: 800; color: var(--bulb); }
@@ -697,7 +697,7 @@
   box-shadow: 0 calc(var(--u) * .25) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); transition: top var(--fast), box-shadow var(--fast), background var(--fast);
 }
 #lobby-game .pp-chip:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
-#lobby-game .pp-chip[aria-checked="true"] { top: calc(var(--u) * .12); background: var(--gold-key); color: var(--ink); box-shadow: 0 2px 0 var(--gold-edge), inset 0 2px 4px rgb(120 60 0 / .3), 0 0 calc(var(--u) * 1) rgb(255 194 61 / .4); }
+#lobby-game .pp-chip[aria-checked="true"] { top: calc(var(--u) * .12); background: linear-gradient(180deg, #FFF8E8, #F1E2C2); color: var(--ink); box-shadow: 0 2px 0 #B9945A, inset 0 2px 4px rgb(120 80 30 / .28); cursor: default; }
 #lobby-game .pp-start { margin-left: auto; }
 /* "Playing too? Join on your phone with the code." The TV only shows the game; a host who plays uses a phone. */
 #lobby-game .pp-playtoo { display: flex; align-items: center; gap: calc(var(--u) * .7); align-self: flex-end; min-height: max(44px, calc(var(--u) * 3)); margin: 0; font: 600 calc(var(--u) * 1.25)/1.25 var(--font-ui); color: var(--text-2); }

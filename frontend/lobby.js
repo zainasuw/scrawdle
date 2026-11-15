@@ -733,6 +733,9 @@
     stopGame();
     if (!owned) return;
     leave();
+    // The room is gone, so its code goes too: one tap on Join mustn't take anyone back into a closed room.
+    const codeBox = document.getElementById("join-code");
+    if (codeBox) codeBox.value = "";
     if (!wasHost) notice(typeof body.message === "string" && body.message ? body.message : "The host closed the room.");
   }
 

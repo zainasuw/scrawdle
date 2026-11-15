@@ -284,7 +284,7 @@
 }
 #lobby-game .pp-card-pick .pp-ico { width: 18px; height: 18px; }
 #lobby-game .pp-card[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 3px var(--bezel), 0 0 26px 4px rgb(255 194 61 / .55), 0 16px 30px -10px rgb(0 0 0 / .7); transform: scale(1.03); }
-#lobby-game .pp-card[aria-pressed="true"] .pp-card-pick { display: inline-flex; animation: pp-pop var(--base) var(--ease-bounce); }
+#lobby-game .pp-card[aria-pressed="true"] .pp-card-pick { display: inline-flex; animation: pp-pop var(--base) var(--ease-out); }
 #lobby-game .pp-card.mine { opacity: .7; }
 #lobby-game .pp-card-yours {
   position: absolute; z-index: 2; right: 8px; bottom: 8px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--text);
@@ -409,7 +409,7 @@
 #lobby-game .pp-controls .swatches { display: contents; }
 #lobby-game .pp-controls .swatch, #lobby-game .pp-controls .wheel {
   position: relative; width: min(28px, calc(100% - 9px)); /* 9px of pad between neighbours, so even the picked dot's 2px gold ring leaves 7px */ height: auto; aspect-ratio: 1; flex: none; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
-  background: var(--swatch); box-shadow: inset 0 -3px 0 rgb(0 0 0 / .2), inset 0 0 0 2px rgb(14 9 44 / .55); transition: transform var(--fast) var(--ease-bounce); /* the dark rim sits inside the dot, so the dot's box is all it covers */
+  background: var(--swatch); box-shadow: inset 0 -3px 0 rgb(0 0 0 / .2), inset 0 0 0 2px rgb(14 9 44 / .55); transition: transform var(--fast) var(--ease-out); /* the dark rim sits inside the dot, so the dot's box is all it covers */
 }
 /* the touch area: the dot's whole column, 44px tall */
 #lobby-game .pp-controls .swatch::before, #lobby-game .pp-controls .wheel::before { content: ""; position: absolute; inset: calc((44px - 100%) / -2) -3px; }
@@ -636,7 +636,7 @@
 }
 #lobby-game .pp-status .pp-ico { width: 1.15em; height: 1.15em; }
 #lobby-game .pp-status-done { color: #fff; }
-#lobby-game .pp-status-done .pp-ico { color: var(--teal); animation: pp-pop var(--slow) var(--ease-bounce); }
+#lobby-game .pp-status-done .pp-ico { color: var(--teal); animation: pp-pop var(--slow) var(--ease-out); }
 #lobby-game .pp-dots { display: inline-flex; gap: 3px; margin-left: 1px; }
 #lobby-game .pp-dots i { width: calc(var(--u) * .3); height: calc(var(--u) * .3); border-radius: 50%; background: currentColor; animation: pp-dot 1.2s ease-in-out infinite; }
 #lobby-game .pp-dots i:nth-child(2) { animation-delay: .2s; } #lobby-game .pp-dots i:nth-child(3) { animation-delay: .4s; }

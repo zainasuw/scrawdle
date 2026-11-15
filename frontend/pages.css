@@ -89,7 +89,7 @@ body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-u
 #page .lock-icon .lock-shackle, #page .lock-icon .lock-half { transform-box: fill-box; transform-origin: center; }
 #page .lock-line.open { color: var(--text); }
 #page .lock-line.open .lock-mark { color: var(--teal); }
-#page .lock-line.unlocked-pop .lock-icon { animation: pop 500ms var(--ease-bounce); }
+#page .lock-line.unlocked-pop .lock-icon { animation: pop 500ms var(--ease-out); }
 #page .lock-line.breaking .lock-icon { animation: shake 500ms ease-in-out; }
 #page .lock-line.breaking .lock-shackle { animation: shackle 800ms var(--ease-out) 300ms forwards; }
 #page .lock-line.breaking .lock-half.left { animation: half-l 700ms var(--ease-out) 450ms forwards; }
@@ -98,7 +98,7 @@ body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-u
 @keyframes shackle { 30% { transform: translateY(-3px) rotate(-12deg); } 100% { transform: translateY(-14px) rotate(-40deg); opacity: 0; } }
 @keyframes half-l { to { transform: translate(-6px, 6px) rotate(-30deg); opacity: 0; } }
 @keyframes half-r { to { transform: translate(6px, 6px) rotate(30deg); opacity: 0; } }
-#page .lock-line.unlocked-pop .lock-text { display: inline-block; animation: pop 500ms var(--ease-bounce); transform-origin: left center; }
+#page .lock-line.unlocked-pop .lock-text { display: inline-block; animation: pop 500ms var(--ease-out); transform-origin: left center; }
 @keyframes pop { 40% { transform: scale(1.08) rotate(-1.5deg); } }
 #page .lock-mark .spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--gold); pointer-events: none; animation: spark 700ms var(--ease-out) forwards; transform: rotate(var(--angle)) translateX(0); }
 @keyframes spark { to { transform: rotate(var(--angle)) translateX(26px); opacity: 0; } }
@@ -137,7 +137,7 @@ body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-u
 }
 #page .like:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
 #page .like[aria-pressed="true"] { background: var(--applause); color: #fff; box-shadow: 0 4px 0 #6A0A36, inset 0 2px 0 rgb(255 255 255 / .25); }
-#page .like[aria-pressed="true"] .heart { animation: beat 380ms var(--ease-bounce); }
+#page .like[aria-pressed="true"] .heart { animation: beat 380ms var(--ease-out); }
 @keyframes beat { 50% { transform: scale(1.35); } }
 #page .heart { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
 #page .heart.filled { fill: currentColor; }

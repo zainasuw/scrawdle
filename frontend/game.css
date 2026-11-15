@@ -156,7 +156,7 @@ html:has(#slot:not([hidden])) #game { display: none; }
   content: ""; width: 27px; height: 27px; border-radius: 50%;
   background: var(--swatch);
   box-shadow: inset 0 -3px 0 rgb(0 0 0 / .2), 0 0 0 2px #120C35;
-  transition: transform var(--fast) var(--ease-bounce), box-shadow var(--fast) var(--ease-out);
+  transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
 }
 #game .swatch:hover::before, #game .wheel:hover::before { transform: translateY(-2px); }
 #game .swatch[aria-pressed="true"]::before { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--gold), 0 4px 8px rgb(0 0 0 / .45); }

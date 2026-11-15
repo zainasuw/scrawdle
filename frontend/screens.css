@@ -357,7 +357,6 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   #setup .daily-card.is-done .menu-text { font-size: 24px; }
   #setup .daily-tiles { gap: 6px; }
   #setup .daily-tiles i { width: 44px; height: 58px; font-size: 46px; border-radius: 8px; box-shadow: 0 5px 0 #B9945A, 0 8px 14px rgb(0 0 0 / .4); }
-  #setup .daily-card.is-done::before { top: 18px; left: 22px; width: 44px; height: 44px; background-size: 28px; }
   #setup .quick-die { width: 58px; height: 58px; }
   #setup .home-links { gap: 12px; }
 }

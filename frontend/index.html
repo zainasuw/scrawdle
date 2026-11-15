@@ -579,6 +579,10 @@
       $("join-help").textContent = JOIN_HINT;
       $("join-form").classList.remove("bad");
     });
+    // On the stage the hint line is hidden until it has something to say: a bad code here, or lobby.js's word back
+    // ("No game has that code ...").
+    new MutationObserver(() => $("join-form").classList.toggle("told", $("join-help").textContent !== JOIN_HINT))
+      .observe($("join-help"), { childList: true, characterData: true, subtree: true });
     $("join-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const code = joinInput.value.trim().toUpperCase();

@@ -361,6 +361,16 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   #setup .quick-die { width: 58px; height: 58px; }
   #setup .home-links { gap: 12px; }
 }
+/* done for today (phones and tablets with online play): the tick leads the "You drew ..." line instead of sitting in
+   the card's corner, so a long drawn word can never push "Daily Word" under it */
+@media (max-width: 999px) {
+  #setup:not(.offline) .daily-card.is-done::before { content: none; }
+  #setup:not(.offline) .daily-card.is-done .menu-text::before {
+    content: ""; display: inline-block; width: 1.1em; height: 1.1em; margin-right: .35em; vertical-align: -.2em; border-radius: 50%;
+    background: var(--teal) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 12.5l4 4 8-9' fill='none' stroke='%231B1240' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / .75em no-repeat;
+    box-shadow: 0 2px 5px rgb(0 0 0 / .4);
+  }
+}
 @media (min-width: 430px) and (max-width: 759px) {
   #setup .logo-mark { font-size: 46px; }
   #setup .host-name { font-size: 32px; }

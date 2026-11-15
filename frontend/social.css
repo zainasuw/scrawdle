@@ -480,6 +480,7 @@
 #lobby-game .pp-sent .pp-tag { font-size: 30px; margin-top: 10px; }
 #lobby-game .pp-mine { margin: 4px 0; width: min(76%, 280px); padding: 6px; border-radius: 22px; background: var(--bezel); box-shadow: inset 0 2px 6px rgb(0 0 0 / .6), 0 0 0 2px rgb(255 255 255 / .1), 0 16px 30px rgb(0 0 0 / .45); animation: pp-rise-in 480ms var(--ease-out) both; }
 #lobby-game .pp-mine img { display: block; width: 100%; aspect-ratio: 1; border-radius: 16px; background: #fff; }
+@media (min-height: 760px) { #lobby-game .pp-mine { width: min(84%, 320px); } } /* a tall phone has the room: your drawing is the hero */
 #lobby-game .pp-ticks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 #lobby-game .pp-ticks li { opacity: .4; transition: opacity var(--base); }
 #lobby-game .pp-ticks li.on { opacity: 1; }

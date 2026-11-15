@@ -440,7 +440,8 @@
       startBtn.dataset.focus = "start";
 
       const seats = el("ol", { className: "pp-seats", "aria-label": "Players" });
-      // Filled seats only: the "N of 8" count beside the title says how many are still free.
+      // Every seat in the room: the filled ones lit in their player's colour, the free ones dim (hidden from screen
+      // readers; the "N of 8" count beside the title says how many are free).
       for (const id of drawers) {
         const remove = id !== me && typeof ctx.kick === "function"
           ? el("button", { type: "button", className: "pp-seat-kick", "aria-label": `Remove ${names[id] || "this player"}`, "data-focus": `kick-${id}`, title: `Remove ${names[id] || "this player"}`, onclick: () => ctx.kick(id) }, svg(I.close))
@@ -448,6 +449,9 @@
         const li = el("li", { className: "pp-seat" + (host.popped && host.popped.has(id) ? "" : " pop") }, avatar(seatOf(id)), el("span", { className: "pp-seat-name", textContent: names[id] || "Player" }), id === me ? tag("you", "ink") : null, remove);
         li.style.setProperty("--c", colourOf(seatOf(id)));
         seats.append(li);
+      }
+      for (let i = drawers.length; i < R.MAX_PLAYERS; i++) {
+        seats.append(el("li", { className: "pp-seat open", "aria-hidden": "true" }, el("span", { className: "pp-av" }), el("span", { className: "pp-seat-name" })));
       }
       host.popped = new Set(drawers);
       host.tilesShown = ctx.code;
@@ -464,7 +468,8 @@
           tiles),
         el("section", { className: "pp-room" },
           el("h2", { className: "pp-room-title" }, "Players ", el("span", { className: "pp-count", textContent: `${drawers.length} of ${R.MAX_PLAYERS}` })),
-          drawers.length ? seats : el("p", { className: "pp-room-empty", textContent: "Names pop in here as phones join." }),
+          seats,
+          drawers.length ? null : el("p", { className: "pp-room-empty", textContent: "Names pop in here as phones join." }),
           drawers.length === 1 ? el("p", { className: "pp-room-hint", textContent: "One more player and you can start." }) : null),
         el("section", { className: "pp-settings", "aria-label": "Game settings" },
           chips("Rounds", "rounds", R.OPTIONS.rounds, String),

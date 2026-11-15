@@ -359,6 +359,8 @@
         banner.style.setProperty("--fs", biggest(holder.firstChild).toFixed(2));
       };
       new ResizeObserver(fit).observe(inner);
+      // the board's font can land after the first fit; the screen's size doesn't change then, so fit again
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     }
 
     // The bulbs round the word board: nx along the top and bottom, ny down each side, placed in percentages so they

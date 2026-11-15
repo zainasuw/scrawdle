@@ -54,6 +54,12 @@
   // The top TOP places. Drawings tied for the last place shown all show, so a tie isn't cut in half.
   const topOf = (ranked) => (ranked || []).filter((it) => it.place <= TOP);
 
+  // Which podium a drawing stands on: its place (1, 2 or 3), not its position in the list, so drawings that tie share
+  // a podium's height and light (1, 2, 2: both #2s are the teal step, not one teal and one magenta).
+  const podiumStep = (place) => Math.min(3, Math.max(1, Math.floor(Number(place)) || 1));
+  // True when another drawing shares this place.
+  const isTied = (it, ranked) => (ranked || []).filter((r) => r.place === it.place).length > 1;
+
   /* ----- Yesterday's winners (publish.js's scrawdleYesterdayWinners, database update 005) ----- */
   // What a winner was drawn to: yesterday's word (older drawings: their parts).
   function winnerCaption(card) {
@@ -68,7 +74,7 @@
     return w.daily.some((c) => c.mine) ? "Your drawing won yesterday!" : "Yesterday's winners";
   }
 
-  const pure = { GROUPS, TOP, rank, myStanding, standingText, groupOf, topOf, winnerCaption, hasWinners, yesterdayHeadline };
+  const pure = { GROUPS, TOP, rank, myStanding, standingText, groupOf, topOf, podiumStep, isTied, winnerCaption, hasWinners, yesterdayHeadline };
   if (typeof module !== "undefined" && module.exports) { module.exports = pure; return; }
 
   /* ---------- The page ---------- */
@@ -80,10 +86,10 @@
     return n;
   }
 
-  function entry(it, big) {
-    const li = el("li", ["lb-entry", big ? "lb-podium-entry" : "", it.mine ? "mine" : ""].filter(Boolean).join(" "));
+  function entry(it, big, tied) {
+    const li = el("li", ["lb-entry", big ? `lb-podium-entry lb-step-${podiumStep(it.place)}` : "", it.mine ? "mine" : ""].filter(Boolean).join(" "));
     const place = el("span", "lb-place", `#${it.place}`);
-    place.setAttribute("aria-label", `Place ${it.place}`);
+    place.setAttribute("aria-label", `Place ${it.place}${tied ? ", tied" : ""}`);
     const img = el("img");
     img.src = it.imageUrl;
     img.alt = it.mine ? `Your drawing, place ${it.place}` : `Drawing in place ${it.place}`;
@@ -122,12 +128,12 @@
     }
     const top = topOf(ranked);
     const podium = el("ol", "lb-podium");
-    podium.append(...top.slice(0, 3).map((it) => entry(it, true)));
+    podium.append(...top.slice(0, 3).map((it) => entry(it, true, isTied(it, ranked))));
     sec.append(podium);
     if (top.length > 3) {
       const rest = el("ol", "lb-list");
       rest.start = 4;
-      rest.append(...top.slice(3).map((it) => entry(it, false)));
+      rest.append(...top.slice(3).map((it) => entry(it, false, isTied(it, ranked))));
       sec.append(rest);
     }
     return sec;

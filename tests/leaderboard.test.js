@@ -83,3 +83,13 @@ test("the headline says when your own drawing won, and nothing shows with no win
   assert.equal(L.hasWinners(w([], [])), false);
   assert.equal(L.hasWinners(null), false, "update 005 not run yet");
 });
+
+test("drawings that tie stand on the same podium step, chosen by place, not by position (1, 2, 2)", () => {
+  const ranked = L.rank([d("a", 5), d("b", 3), d("c", 3), d("e", 1)]);
+  assert.deepEqual(ranked.slice(0, 3).map((r) => L.podiumStep(r.place)), [1, 2, 2]);
+  assert.deepEqual(ranked.map((r) => L.isTied(r, ranked)), [false, true, true, false]);
+  const allFirst = L.rank([d("a", 2), d("b", 2), d("c", 2)]);
+  assert.deepEqual(allFirst.map((r) => L.podiumStep(r.place)), [1, 1, 1], "three-way tie for first: three gold steps");
+  assert.equal(L.podiumStep(7), 3);
+  assert.equal(L.podiumStep(undefined), 1);
+});

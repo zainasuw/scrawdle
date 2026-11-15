@@ -169,9 +169,14 @@ body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-u
   gap: 26px 14px; margin: 18px 0 0; padding: 0; list-style: none; align-items: end;
 }
 #page .lb-entry { position: relative; display: grid; gap: 0; color: var(--text); }
-#page .lb-podium-entry:nth-child(1) { grid-area: first; --pod: 74px; --lit: var(--gold); }
-#page .lb-podium-entry:nth-child(2) { grid-area: second; --pod: 58px; --lit: var(--teal); }
-#page .lb-podium-entry:nth-child(3) { grid-area: third; --pod: 48px; --lit: var(--magenta); }
+/* Where each stands is its position in the list; how tall its podium is and its light come from its PLACE (lb-step-N,
+ * leaderboard.js), so drawings that tie stand on the same step in the same colour. */
+#page .lb-podium-entry:nth-child(1) { grid-area: first; }
+#page .lb-podium-entry:nth-child(2) { grid-area: second; }
+#page .lb-podium-entry:nth-child(3) { grid-area: third; }
+#page .lb-step-1 { --pod: 74px; --lit: var(--gold); }
+#page .lb-step-2 { --pod: 58px; --lit: var(--teal); }
+#page .lb-step-3 { --pod: 48px; --lit: var(--magenta); }
 #page .lb-podium-entry img {
   position: relative; z-index: 1; display: block; width: calc(100% - 20px); margin: 0 auto -6px; height: auto; aspect-ratio: 3 / 2;
   border: 5px solid #120C35; border-radius: 14px; background: #fff;
@@ -205,19 +210,19 @@ body > p { margin: 0 0 32px; text-align: center; font: 600 16px/1.4 var(--font-u
 }
 #page .lb-podium-entry .like-count { font-size: 30px; }
 /* #1: crowned, in a gold spotlight */
-#page .lb-podium-entry:nth-child(1)::before {
+#page .lb-step-1::before {
   content: ""; position: absolute; z-index: 0; left: 0; right: 0; top: -90px; height: calc(100% + 90px); pointer-events: none;
   background: radial-gradient(ellipse 46% 44% at 50% 46%, rgb(255 231 166 / .24), transparent 100%);
 }
-#page .lb-podium-entry:nth-child(1) .lb-place {
+#page .lb-step-1 .lb-place {
   position: relative; background: var(--buzzer-cap); box-shadow: 0 4px 0 var(--buzzer-base), 0 8px 16px rgb(0 0 0 / .45);
 }
-#page .lb-podium-entry:nth-child(1) .lb-place::before {
+#page .lb-step-1 .lb-place::before {
   content: ""; position: absolute; left: 50%; top: -30px; width: 40px; height: 28px; translate: -50% 0;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 28'><path d='M4 24 2 6l10 8 8-12 8 12 10-8-2 18z' fill='%23FFC23D' stroke='%231B1240' stroke-width='2.4' stroke-linejoin='round'/><circle cx='20' cy='18' r='2.6' fill='%23F2358A'/></svg>") center / contain no-repeat;
 }
-#page .lb-podium-entry:nth-child(2) .lb-place, #page .lb-podium-entry:nth-child(3) .lb-place { min-width: 40px; height: 48px; font-size: 30px; }
-#page .lb-podium-entry:nth-child(n+2) .like-count { font-size: 24px; }
+#page .lb-podium-entry:not(.lb-step-1) .lb-place { min-width: 40px; height: 48px; font-size: 30px; }
+#page .lb-podium-entry:not(.lb-step-1) .like-count { font-size: 24px; }
 #page .lb-yours { padding: 4px 10px; border-radius: var(--r-pill); background: var(--teal); color: var(--ink); font: 800 12px/1.2 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; }
 #page .lb-entry.mine img { box-shadow: 0 0 0 3px var(--teal), 0 16px 28px -10px rgb(0 0 0 / .7); }
 
@@ -278,9 +283,9 @@ dialog.ask-box .quiet { min-height: 44px; padding: 4px 8px; border: 0; backgroun
 @media (min-width: 900px) {
   #page { padding: 24px 32px 32px; }
   #page .wordmark { font-size: 36px; }
-  #page .lb-podium-entry:nth-child(1) { --pod: 110px; }
-  #page .lb-podium-entry:nth-child(2) { --pod: 76px; }
-  #page .lb-podium-entry:nth-child(3) { --pod: 56px; }
+  #page .lb-step-1 { --pod: 110px; }
+  #page .lb-step-2 { --pod: 76px; }
+  #page .lb-step-3 { --pod: 56px; }
 }
 @media (prefers-reduced-motion: reduce) {
   #page *, #page *::before, #page *::after { animation: none !important; transition-duration: 0ms !important; }

@@ -44,7 +44,7 @@ export async function purge(client, { now = new Date(), dryRun = false } = {}) {
     .sort();
 
   // Files live at <day>/<mode>/<file>. Walk whatever mode folders exist instead of a fixed list,
-  // so a new game mode (Daily Scrawl, or a teammate's) is cleaned up without touching this file.
+  // so a new game mode (Daily Scrawl, or another mode) is cleaned up without touching this file.
   // A folder is anything with files inside it; a bare file directly under a day folder is removed too.
   const paths = [];
   for (const day of oldDays) {

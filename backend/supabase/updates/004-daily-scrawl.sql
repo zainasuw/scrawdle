@@ -1,7 +1,7 @@
 -- Update 004 (2026-11-06): "Daily Scrawl", the merged Basic + Detailed mode, gets its own drawing mode id: 'daily'.
 --
 -- Run ONCE, in the Supabase SQL Editor, on a project that already ran schema.sql plus updates 001 to 003
--- (that's Kevin's project). A brand-new project doesn't need this file: schema.sql already includes it.
+-- (the original project). A brand-new project doesn't need this file: schema.sql already includes it.
 --
 -- Run it BEFORE the frontend that publishes Daily Scrawl drawings is deployed, or publishing them is refused.
 -- 'basic' and 'detailed' stay allowed on purpose: a page that was already open, or a draft saved in a

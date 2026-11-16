@@ -1,11 +1,10 @@
 -- Update 002 (2026-11-05): thumbs up / thumbs down votes on published drawings.
 --
 -- Run ONCE, in the Supabase SQL Editor, on a project that already ran schema.sql and update 001
--- (that's Kevin's project). A brand-new project doesn't need this file: schema.sql already
+-- (the original project). A brand-new project doesn't need this file: schema.sql already
 -- includes everything here.
 --
--- Step-by-step instructions, including how to check it worked and what to update afterwards, are
--- under "Pending database updates" at the top of ../../../CLAUDE.md.
+-- To apply it: paste this file into the Supabase SQL Editor and press Run once.
 --
 -- Run this BEFORE the frontend that calls cast_vote / vote_counts reaches main. If the frontend
 -- ships first, the gallery still loads but shows no vote buttons (publish.js treats a missing

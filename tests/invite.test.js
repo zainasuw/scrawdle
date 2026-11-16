@@ -8,15 +8,15 @@ const { inviteLink, inviteText, smsBody, smsHref, qrModules, qrPath, qrSvg } = r
 const { codeFromSearch } = require("../frontend/lobby.js");
 
 test("the invite link is the site's address with ?CODE, which the join flow reads back", () => {
-  assert.equal(inviteLink("https://scrawdle.vercel.app", "/", "BKQZ"), "https://scrawdle.vercel.app/?BKQZ");
-  assert.equal(inviteLink("https://scrawdle.vercel.app", "/index.html", "BKQZ"), "https://scrawdle.vercel.app/?BKQZ", "index.html is the same page");
+  assert.equal(inviteLink("https://your-scrawdle.example", "/", "BKQZ"), "https://your-scrawdle.example/?BKQZ");
+  assert.equal(inviteLink("https://your-scrawdle.example", "/index.html", "BKQZ"), "https://your-scrawdle.example/?BKQZ", "index.html is the same page");
   assert.equal(inviteLink("http://127.0.0.1:8624", "", "BKQZ"), "http://127.0.0.1:8624/?BKQZ");
   assert.equal(inviteLink("https://example.com", "/games/", "BKQZ"), "https://example.com/games/?BKQZ", "a site in a folder keeps its folder");
-  assert.equal(codeFromSearch(new URL(inviteLink("https://scrawdle.vercel.app", "/", "BKQZ")).search), "BKQZ");
+  assert.equal(codeFromSearch(new URL(inviteLink("https://your-scrawdle.example", "/", "BKQZ")).search), "BKQZ");
 });
 
 test("the text message is short, friendly, and carries the link whole", () => {
-  const link = "https://scrawdle.vercel.app/?BKQZ";
+  const link = "https://your-scrawdle.example/?BKQZ";
   const body = smsBody(link, "BKQZ");
   assert.ok(body.includes(link));
   assert.ok(body.includes("BKQZ"));
@@ -29,7 +29,7 @@ test("the text message is short, friendly, and carries the link whole", () => {
 });
 
 test("the QR code is a real QR grid: square, a known size, finder patterns in three corners", () => {
-  const m = qrModules(qrcode, "https://scrawdle.vercel.app/?BKQZ");
+  const m = qrModules(qrcode, "https://your-scrawdle.example/?BKQZ");
   assert.equal(m.length, 29, "version 3 at error correction M: big modules, easy to scan from across a room");
   for (const row of m) assert.equal(row.length, 29);
   const finder = (r0, c0) => {
@@ -40,7 +40,7 @@ test("the QR code is a real QR grid: square, a known size, finder patterns in th
   };
   finder(0, 0); finder(0, 22); finder(22, 0);
   assert.equal(m[22][22] && m[28][28] && m[22][28] && m[28][22], false, "no finder in the bottom-right corner");
-  assert.deepEqual(qrModules(qrcode, "https://scrawdle.vercel.app/?BKQZ"), m, "the same link always gives the same code");
+  assert.deepEqual(qrModules(qrcode, "https://your-scrawdle.example/?BKQZ"), m, "the same link always gives the same code");
   assert.ok(qrModules(qrcode, "https://a-much-longer-custom-domain.example.com/?BKQZ").length > 29, "a longer link gets a bigger version, not a failure");
 });
 

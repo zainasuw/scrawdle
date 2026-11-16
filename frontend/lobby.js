@@ -1,6 +1,6 @@
 /* Lobbies: private rooms. The device that taps "Host a game" (#multiplayer on home) makes one and becomes the
  * host (for Scrawdle Party, the TV screen); friends type its code (4 letters) into "Join a game" (#join-form /
- * #join-code on home) on their phones, pick a name, and they're in. Invite links like scrawdle.vercel.app/?BKQZ
+ * #join-code on home) on their phones, pick a name, and they're in. Invite links like your-scrawdle.example/?BKQZ
  * still work. (Older 5-letter codes and links are still accepted.)
  *
  * What this file does: making and joining a lobby (the home buttons above), the name step for someone joining,
@@ -53,7 +53,7 @@
  * LIMITS you'll feel (Supabase free plan, per its Realtime limits page, read 2026-11-04):
  * 100 messages per second for the whole project, 256 KB per message, 200 connections at once (one
  * per player). So don't send every pointer movement: batch strokes, and send them a few times a
- * second at most. If the database or this file needs a change, ask Kevin; he runs the SQL.
+ * second at most. If the database needs a change, add a numbered file to backend/supabase/updates/.
  */
 (function (root) {
   "use strict";

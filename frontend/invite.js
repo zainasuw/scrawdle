@@ -3,7 +3,7 @@
  * (vendor/qrcode.js, MIT), never by an online QR service: a room's code must not go to anyone else.
  * The pure parts are tested in tests/invite.test.js.
  *
- *   inviteLink(origin, pathname, code)  "https://scrawdle.vercel.app/?BKQZ" (lobby.js reads ?BKQZ and asks for a name)
+ *   inviteLink(origin, pathname, code)  "https://your-scrawdle.example/?BKQZ" (lobby.js reads ?BKQZ and asks for a name)
  *   inviteText(code)                    the short line a share sheet puts with the link
  *   smsBody(link, code) / smsHref(body) a text message with the link in it, and the sms: link that opens it
  *   qrModules(qrcode, text)             the QR code's grid of dark (true) and light (false) squares

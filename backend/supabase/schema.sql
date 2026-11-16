@@ -1,15 +1,15 @@
 -- Scrawdle schema: finished drawings for the daily gallery, plus the registry of lobby codes.
 -- Written 2026-11-04. This file is the full picture for a fresh project. A project that already
 -- exists gets only the changes, from updates/ (run in order, each once).
--- See ../README.md and ../../CLAUDE.md for the design reasoning.
+-- See ../README.md for the design reasoning.
 --
 -- Scope: "store today's finished drawings, show them in the gallery" (matches
 -- window.scrawdlePublish and window.scrawdleGallery in ../../frontend/drawing.js and
 -- gallery.js), and "remember which lobby codes exist" (frontend/lobby.js). Who is IN a lobby is
 -- never stored: that's Supabase Realtime (presence and broadcast), which needs no tables.
 --
--- Prompts are NOT stored here on purpose: they stay in ../../frontend/prompts.json so any
--- teammate can edit them by committing a file, with no Supabase access needed. See CLAUDE.md.
+-- Prompts are NOT stored here on purpose: they stay in ../../frontend/prompts.json so anyone
+-- can edit them by committing a file, with no Supabase access needed.
 
 create table if not exists drawings (
   id uuid primary key default gen_random_uuid(),
@@ -17,7 +17,7 @@ create table if not exists drawings (
   mode text not null check (mode in ('basic', 'detailed', 'scrawl', 'daily')), -- scrawl = Daily Free Play (free draw); daily = Daily Scrawl (the merged Basic + Detailed, update 004)
   prompts jsonb not null, -- the exact set drawn: [{ key, label, value, optional }]
   image_path text not null unique, -- path inside the "drawings" storage bucket
-  hidden boolean not null default false, -- set by three players' reports (report_drawing below) or by a teammate
+  hidden boolean not null default false, -- set by three players' reports (report_drawing below) or by the project owner
   created_at timestamptz not null default now()
 );
 
@@ -34,11 +34,11 @@ create policy "public can read today's visible drawings"
   using (day between current_date - 1 and current_date + 1 and not hidden);
 
 -- Anyone can publish a drawing for today only. There's no login, so this can't be tied to a
--- real user; anyone with the anon key (which is meant to be public, see CLAUDE.md) could insert
+-- real user; anyone with the anon key (which is meant to be public) could insert
 -- directly, bypassing the game. The check constraint and this policy both reject anything
 -- outside today's valid modes, but can't stop spam or inappropriate images outright. That's a
 -- known gap. Players can report a drawing (reports, below), and three different players' reports
--- hide it; a teammate can also set hidden = true or delete the row from the Supabase dashboard. No update/delete policy is granted to anon on purpose.
+-- hide it; the project owner can also set hidden = true or delete the row from the Supabase dashboard. No update/delete policy is granted to anon on purpose.
 create policy "public can publish a drawing for today"
   on drawings for insert
   to anon
@@ -120,7 +120,7 @@ grant execute on function public.vote_counts(uuid[], uuid) to anon;
 -- 1. The reports. One per reporter per drawing, so reporting twice counts once. There are no
 -- logins, so a reporter is the same random browser id votes use (see publish.js). Clearing
 -- browser data gives a new id, so one person determined to hide a drawing could do it alone;
--- this stops accidents and casual misuse, not a determined attacker. A teammate can bring a
+-- this stops accidents and casual misuse, not a determined attacker. The project owner can bring a
 -- wrongly hidden drawing back by setting hidden = false in the dashboard.
 -- "on delete cascade": the daily wipe deletes old drawings, and their reports go with them.
 create table if not exists public.reports (
@@ -205,7 +205,7 @@ $$;
 grant execute on function public.top_drawings(date, text[], int) to anon;
 
 
--- Lobbies: private rooms joined by a 4-letter code (https://scrawdle.vercel.app/?ABCDE).
+-- Lobbies: private rooms joined by a 4-letter code (https://your-scrawdle.example/?ABCDE).
 -- The table only records that a code exists, so a mistyped code can be told apart from a real
 -- lobby. RLS is on with NO policies, so the public key can't read or write the table directly
 -- (otherwise anyone could list every lobby code). Visitors go through the two functions below.
@@ -269,7 +269,7 @@ grant execute on function public.lobby_exists(text) to anon;
 -- anything older, so a drawing lives roughly one to two days (the window is one day wide because
 -- the game's "day" is the player's local date; see the policies above).
 --
--- ALREADY RUN on Kevin's project (the block below is the record of what was run, with
+-- ALREADY RUN on the original project (the block below is the record of what was run, with
 -- placeholders; running it again would fail on the duplicate secret names). Order of setup,
 -- if it ever has to be repeated (full steps in ../README.md):
 --   1. Deploy the function and set its CRON_SECRET secret, with JWT verification OFF.
@@ -299,7 +299,7 @@ grant execute on function public.lobby_exists(text) to anon;
 -- Forget lobby codes older than a day. This is scheduled by updates/007-clear-old-rooms.sql: run that
 -- file once in the SQL Editor (it turns on pg_cron, removes any earlier 'purge-old-lobbies' job by
 -- name, then schedules this one, so running it again is safe). The block below is what it schedules.
--- (On Kevin's project it was first scheduled by updates/001-lobbies-and-daily-scrawl.sql.)
+-- (On the original project it was first scheduled by updates/001-lobbies-and-daily-scrawl.sql.)
 -- select cron.schedule(
 --   'purge-old-lobbies',
 --   '15 10 * * *',

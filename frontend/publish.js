@@ -6,7 +6,7 @@
  * backend/supabase/updates/, rules in votes.js).
  *
  * Scope: only "store today's finished drawings, show them in the gallery." Multiplayer
- * lobbies and syncing player actions (also on Kevin's list in the team's plan doc) are a
+ * lobbies and syncing player actions (planned separately) are a
  * separate, bigger feature and are not built here. See backend/README.md.
  *
  * UNVERIFIED: the exact property name on the object returned by

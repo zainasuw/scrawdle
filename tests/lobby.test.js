@@ -28,7 +28,7 @@ test("a link like /?BKQZ (or an older /?BCDFG) gives the code, and nothing else 
 });
 
 test("the invite link is the site address plus ?CODE", () => {
-  assert.equal(lobbyLink("https://scrawdle.vercel.app", "/", "BCDFG"), "https://scrawdle.vercel.app/?BCDFG");
+  assert.equal(lobbyLink("https://your-scrawdle.example", "/", "BCDFG"), "https://your-scrawdle.example/?BCDFG");
   assert.equal(lobbyLink("http://localhost:8000", "", "BCDFG"), "http://localhost:8000/?BCDFG");
 });
 

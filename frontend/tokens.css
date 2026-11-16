@@ -7,7 +7,7 @@
  * take over in browsers that understand them. The old role names (--paper, --ink, --yellow, --line, --surface ...)
  * are aliases of these steps, so every older rule reads the same system.
  *
- * Numbers: scratchpad/upgrade-review/plan.md section 3. */
+ */
 
 :root {
   color-scheme: light;

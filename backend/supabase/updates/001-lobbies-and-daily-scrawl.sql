@@ -1,7 +1,7 @@
 -- Update 001 (2026-11-04): lobbies, and Daily Scrawl as a drawing mode.
 --
 -- Run ONCE, in the Supabase SQL Editor, on a project that already ran the earlier schema.sql
--- (that's Kevin's project). A brand-new project doesn't need this file: schema.sql already
+-- (the original project). A brand-new project doesn't need this file: schema.sql already
 -- includes everything here.
 --
 -- Also redeploy the Edge Function (backend/supabase/functions/purge-old-drawings/index.ts):

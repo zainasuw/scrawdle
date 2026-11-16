@@ -1,11 +1,10 @@
 -- Update 003 (2026-11-05): reporting drawings. Three different players' reports hide a drawing.
 --
 -- Run ONCE, in the Supabase SQL Editor, on a project that already ran schema.sql and updates 001
--- and 002 (that's Kevin's project). A brand-new project doesn't need this file: schema.sql already
+-- and 002 (the original project). A brand-new project doesn't need this file: schema.sql already
 -- includes everything here. Running it a second time is harmless.
 --
--- Step-by-step instructions, including how to check it worked, are under "Pending database
--- updates" at the top of ../../../CLAUDE.md.
+-- To apply it: paste this file into the Supabase SQL Editor and press Run once.
 --
 -- Run this BEFORE the frontend that calls report_drawing reaches main. If the frontend ships
 -- first, pressing Report says reporting isn't switched on yet, and nothing else breaks.
@@ -13,7 +12,7 @@
 -- 1. The reports. One per reporter per drawing, so reporting twice counts once. There are no
 -- logins, so a reporter is the same random browser id votes use (see publish.js). Clearing
 -- browser data gives a new id, so one person determined to hide a drawing could do it alone;
--- this stops accidents and casual misuse, not a determined attacker. A teammate can bring a
+-- this stops accidents and casual misuse, not a determined attacker. The project owner can bring a
 -- wrongly hidden drawing back by setting hidden = false in the dashboard.
 -- "on delete cascade": the daily wipe deletes old drawings, and their reports go with them.
 create table if not exists public.reports (

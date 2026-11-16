@@ -223,7 +223,7 @@
     const announce = (text) => { say.textContent = ""; later(30, () => { say.textContent = text; }); };
 
     /* ---------- chrome ---------- */
-    const joinHost = location.host || "scrawdle.vercel.app";
+    const joinHost = location.host || "this website";
     function codeBoard(small) {
       return el("div", { className: `pp-code ${small ? "small" : ""}`.trim() },
         el("span", { className: "pp-code-lbl" }, "Room code", el("b", { textContent: joinHost })),

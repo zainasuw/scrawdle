@@ -2,11 +2,10 @@
 -- drawing(s) of a given day, for "Yesterday's winner" on the home screen and the leaderboard page.
 --
 -- Run ONCE, in the Supabase SQL Editor, on a project that already ran schema.sql plus updates 001 to
--- 004 (that's Kevin's project). A brand-new project doesn't need this file: schema.sql already
+-- 004 (the original project). A brand-new project doesn't need this file: schema.sql already
 -- includes it. Running it a second time is harmless.
 --
--- Step-by-step instructions, including how to check it worked, are under "Pending database updates"
--- at the top of ../../../CLAUDE.md. Until it runs, the game simply shows no winner; nothing breaks.
+-- To apply it: paste this file into the Supabase SQL Editor and press Run once. Until it runs, the game simply shows no winner; nothing breaks.
 --
 -- Why a function instead of reading the table: the public key may only read drawings dated within a
 -- day of the database's own date, which is UTC (see "public can read today's visible drawings" in
@@ -15,8 +14,6 @@
 -- This function returns only the winners (not every drawing), for days the wipe still keeps, and
 -- leaves that read rule as it is. It stores nothing and keeps nothing longer.
 --
--- (Numbering: a planned update that drops 'basic' and 'detailed' from the mode constraint was
--- mentioned in CLAUDE.md as "005"; it becomes 006.)
 
 -- The best drawing of `target_day` among `modes`: the most thumbs up (at least one), then the fewest
 -- thumbs down. Every drawing tied on both is returned, oldest first, up to `max_count` (at most 10).

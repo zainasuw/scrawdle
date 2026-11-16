@@ -72,6 +72,9 @@
     close: line('<path d="M9 9l14 14M23 9L9 23" stroke-width="3.2"/>'),
     leave: line('<path d="M13 6H7v20h6"/><path d="M14 16h13M22 10l6 6-6 6"/>'),
     phone: line('<rect x="9" y="3.5" width="14" height="25" rx="3"/><path d="M14 24.5h4"/>'),
+    copy: line('<rect x="11" y="11" width="15" height="15" rx="3"/><path d="M6 20V9a3 3 0 0 1 3-3h11"/>'),
+    message: line('<path d="M5 8a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H13l-6 5v-5H8a3 3 0 0 1-3-3z"/>'),
+    share: line('<path d="M16 4v15"/><path d="M10 10l6-6 6 6"/><path d="M9 15H7v12h18V15h-2"/>'),
     play: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 6.5v19l16-9.5z" fill="currentColor" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></svg>`,
     sparkle: `<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M30 4c2.6 15 9 21.4 26 26-17 4.6-23.4 11-26 26-2.6-15-9-21.4-26-26 17-4.6 23.4-11 26-26z" fill="#FFC23D"/></svg>`,
     // drawing tools (the party board)
@@ -419,6 +422,79 @@
       if (amHost) tvLobby(); else phoneWait();
     }
 
+    /* ---------- inviting (TV lobby): the QR code, Copy link, Text a link ---------- */
+    // The room's link (/?CODE): a phone that opens it goes straight to the name step for this room. The QR code is made
+    // here in the browser (invite.js, vendor/qrcode.js); the link never goes to an outside service.
+    const Invite = root.ScrawdleInvite;
+    const roomLink = Invite ? Invite.inviteLink(location.origin, location.pathname, ctx.code) : `${location.origin}/?${ctx.code}`;
+    let qrMarkup = null;
+    function qrBoard() {
+      if (qrMarkup === null) {
+        try { qrMarkup = Invite && typeof root.qrcode === "function" ? Invite.qrSvg(Invite.qrModules(root.qrcode, roomLink)) : ""; } catch (err) { qrMarkup = ""; }
+      }
+      if (!qrMarkup) return null; // no encoder: the typed code and the two keys still work
+      const plate = el("span", { className: "pp-qr-plate", role: "img", "aria-label": `QR code for the room link, ${roomLink}` });
+      plate.innerHTML = qrMarkup;
+      return el("figure", { className: "pp-qr" }, plate, el("figcaption", {}, "or ", el("b", { textContent: "scan to join" })));
+    }
+    // Copy link: the clipboard where the page may use it, else the older copy command (a page on a home network
+    // address, http://192.168..., has no clipboard access). The key says "Copied!" for a moment either way.
+    async function copyText(text) {
+      try { if (navigator.clipboard && root.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (err) { /* try the older way */ }
+      const was = document.activeElement;
+      const box = el("textarea", { value: text, readOnly: true, className: "pp-copybox", tabIndex: -1, "aria-hidden": "true" });
+      view.append(box);
+      box.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+      box.remove();
+      if (was && was.focus) was.focus();
+      return ok;
+    }
+    const COPIED_MS = 2200;
+    function copyKey() {
+      const copied = host.copiedAt && Date.now() - host.copiedAt < COPIED_MS;
+      const b = el("button", { type: "button", className: `pp-key ${copied ? "copied" : ""}`.trim(), "data-focus": "copy", onclick: copyLink },
+        svg(copied ? I.check : I.copy), el("span", { textContent: copied ? "Copied!" : "Copy link" }));
+      return b;
+    }
+    async function copyLink() {
+      const ok = await copyText(roomLink);
+      const note = view.querySelector(".pp-invite-link");
+      if (!ok) { // nothing could copy: show the link to copy by hand
+        if (note) { note.hidden = false; note.textContent = roomLink; }
+        announce(`Copy this link: ${roomLink}`);
+        return;
+      }
+      host.copiedAt = Date.now();
+      const old = view.querySelector('[data-focus="copy"]');
+      if (old) { const fresh = copyKey(); const focused = document.activeElement === old; old.replaceWith(fresh); if (focused) fresh.focus(); }
+      announce("Link copied.");
+      later(COPIED_MS + 50, () => {
+        const b = view.querySelector('[data-focus="copy"].copied');
+        if (!b) return;
+        const fresh = copyKey(); const focused = document.activeElement === b; b.replaceWith(fresh); if (focused) fresh.focus();
+      });
+    }
+    // Text a link: the device's share sheet where it has one (phones, Safari, Chrome on a laptop), which offers
+    // Messages and the other apps; elsewhere a text message, already written, with the link in it.
+    function shareKey() {
+      const body = Invite ? Invite.smsBody(roomLink, ctx.code) : roomLink;
+      if (typeof navigator.share === "function") {
+        return el("button", { type: "button", className: "pp-key", "data-focus": "share", onclick: async () => {
+          try { await navigator.share({ title: "Scrawdle", text: Invite ? Invite.inviteText(ctx.code) : "", url: roomLink }); }
+          catch (err) { if (!err || err.name !== "AbortError") location.href = Invite ? Invite.smsHref(body) : roomLink; }
+        } }, svg(I.share), el("span", { textContent: "Share link" }));
+      }
+      return el("a", { className: "pp-key", "data-focus": "share", href: Invite ? Invite.smsHref(body) : roomLink }, svg(I.message), el("span", { textContent: "Text a link" }));
+    }
+    function invitePanel() {
+      return el("div", { className: "pp-scan" },
+        qrBoard(),
+        el("div", { className: "pp-invite", role: "group", "aria-label": "Send the link" }, copyKey(), shareKey()),
+        el("p", { className: "pp-invite-link", hidden: true }));
+    }
+
     function tvLobby() {
       const s = game.settings;
       const chips = (label, key, options, show) => {
@@ -466,11 +542,13 @@
       screen("lobby",
         el("section", { className: "pp-join" },
           el("h1", { className: "pp-join-title", textContent: "Grab your phones!" }),
-          el("ol", { className: "pp-steps" },
-            el("li", {}, el("b", { textContent: "1" }), el("span", {}, "Go to ", el("strong", { textContent: joinHost }))),
-            el("li", {}, el("b", { textContent: "2" }), el("span", {}, "Tap ", el("strong", { textContent: "Join a game" }))),
-            el("li", {}, el("b", { textContent: "3" }), el("span", { textContent: "Type this code and your name" }))),
-          tiles),
+          el("div", { className: "pp-type" },
+            el("ol", { className: "pp-steps" },
+              el("li", {}, el("b", { textContent: "1" }), el("span", {}, "Go to ", el("strong", { textContent: joinHost }))),
+              el("li", {}, el("b", { textContent: "2" }), el("span", {}, "Tap ", el("strong", { textContent: "Join a game" }))),
+              el("li", {}, el("b", { textContent: "3" }), el("span", { textContent: "Type this code and your name" }))),
+            tiles),
+          invitePanel()),
         el("section", { className: "pp-room" },
           el("h2", { className: "pp-room-title" }, "Players ", el("span", { className: "pp-count", textContent: `${drawers.length} of ${R.MAX_PLAYERS}` })),
           seats,

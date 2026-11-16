@@ -626,7 +626,7 @@
   grid-row: 2; grid-column: 1; min-width: 0; padding: calc(var(--u) * .8 * var(--pod)) calc(var(--u) * .6) calc(var(--u) * .8 * var(--pod)) calc(var(--u) * 1.1 * var(--pod));
   font: 800 calc(var(--u) * 1.7 * var(--pod))/1.1 var(--font-ui); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-#lobby-game .pp-seat-name { grid-column: 1 / -1; text-align: center; padding-inline: calc(var(--u) * .7); font-size: calc(var(--u) * 1.5); white-space: normal; overflow-wrap: anywhere; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#lobby-game .pp-seat-name { grid-column: 1 / -1; text-align: center; padding-block: 0; margin-block: calc(var(--u) * .8); padding-inline: calc(var(--u) * .7); font-size: calc(var(--u) * 1.5); /* margins, not padding, so two clamped lines never show a sliver of a third */ white-space: normal; overflow-wrap: anywhere; text-wrap: balance; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 #lobby-game .pp-score {
   grid-row: 2; grid-column: 2; padding-right: calc(var(--u) * 1.1 * var(--pod));
   font: 900 calc(var(--u) * 2.5 * var(--pod))/1 var(--font-board); color: var(--gold); text-shadow: 0 0 calc(var(--u) * .8) rgb(255 194 61 / .55); font-variant-numeric: tabular-nums;
@@ -648,11 +648,14 @@
 #lobby-game .pp-pl.lead .pp-av { box-shadow: 0 0 0 calc(var(--s) * .045) var(--bezel), 0 0 0 calc(var(--s) * .085) var(--gold), 0 0 calc(var(--s) * .5) rgb(255 194 61 / .55); }
 
 /* TV lobby */
-#lobby-game .pp-tv .pp-lobby { display: grid; grid-template-columns: 1fr 1.1fr; grid-template-rows: minmax(0, 1fr) auto; gap: calc(var(--u) * 2) calc(var(--u) * 4); padding-top: calc(var(--u) * 1); }
-#lobby-game .pp-join { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 1.6); }
-#lobby-game .pp-join-title { margin: 0; font-family: var(--font-show); font-weight: 400; font-size: calc(var(--u) * 4.4); line-height: 1.05; color: var(--text); text-shadow: 0 calc(var(--u) * .25) 0 #4A0E36, 0 calc(var(--u) * .5) calc(var(--u) * 1) rgb(0 0 0 / .5); }
+#lobby-game .pp-tv .pp-lobby { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: calc(var(--u) * 2) calc(var(--u) * 3.6); padding-top: calc(var(--u) * 1); }
+/* Joining: the typed way (the steps over the code tiles) and, beside it, the QR code with Copy link and Text a link. */
+#lobby-game .pp-join { display: grid; grid-template-columns: auto auto; align-content: center; align-items: center; gap: calc(var(--u) * 2.2) calc(var(--u) * 2.6); min-width: 0; }
+#lobby-game .pp-join-title { grid-column: 1 / -1; }
+#lobby-game .pp-type { display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 1.8); }
+#lobby-game .pp-join-title { margin: 0; font-family: var(--font-show); font-weight: 400; font-size: calc(var(--u) * 4); line-height: 1.05; white-space: nowrap; color: var(--text); text-shadow: 0 calc(var(--u) * .25) 0 #4A0E36, 0 calc(var(--u) * .5) calc(var(--u) * 1) rgb(0 0 0 / .5); }
 #lobby-game .pp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: calc(var(--u) * .8); }
-#lobby-game .pp-steps li { display: flex; align-items: center; gap: calc(var(--u) * 1); font-weight: 600; font-size: calc(var(--u) * 1.6); color: var(--text); }
+#lobby-game .pp-steps li { display: flex; align-items: center; gap: calc(var(--u) * .9); font-weight: 600; font-size: calc(var(--u) * 1.5); color: var(--text); }
 #lobby-game .pp-steps b {
   width: calc(var(--u) * 2.6); height: calc(var(--u) * 2.6); flex: none; display: grid; place-items: center; border-radius: 50%;
   background: linear-gradient(180deg, #FFF8E8 0 49.4%, #F1E2C2 50.6% 100%); color: var(--ink); box-shadow: 0 calc(var(--u) * .2) 0 #B9945A, 0 calc(var(--u) * .3) calc(var(--u) * .6) rgb(0 0 0 / .4);
@@ -661,19 +664,46 @@
 #lobby-game .pp-steps strong { font-weight: 800; color: var(--bulb); }
 /* The room code on cream flip tiles, on a dark board with a gold rim. */
 #lobby-game .pp-code-tiles {
-  align-self: flex-start; display: flex; gap: calc(var(--u) * .9); margin-top: calc(var(--u) * .8); padding: calc(var(--u) * 1.6);
-  border-radius: calc(var(--u) * 1.6); background: var(--screen);
+  align-self: flex-start; display: flex; gap: calc(var(--u) * .75); padding: calc(var(--u) * 1.4);
+  border-radius: calc(var(--u) * 1.5); background: var(--screen);
   box-shadow: 0 0 0 calc(var(--u) * .3) #1A1048, 0 0 0 calc(var(--u) * .48) rgb(255 194 61 / .55), 0 calc(var(--u) * 1.4) calc(var(--u) * 3.6) rgb(0 0 0 / .55), inset 0 calc(var(--u) * 1) calc(var(--u) * 3) rgb(0 0 0 / .6);
 }
 #lobby-game .pp-tile {
-  position: relative; display: grid; place-items: center; width: calc(var(--u) * 8); height: calc(var(--u) * 10.4); border-radius: calc(var(--u) * .9);
+  position: relative; display: grid; place-items: center; width: calc(var(--u) * 6.2); height: calc(var(--u) * 8); border-radius: calc(var(--u) * .75);
   background: linear-gradient(180deg, #FFF8E8 0 49.4%, #F1E2C2 50.6% 100%); color: var(--ink);
   box-shadow: 0 calc(var(--u) * .5) 0 #B9945A, 0 calc(var(--u) * .9) calc(var(--u) * 1.6) rgb(0 0 0 / .45), inset 0 1px 0 #fff;
-  font: 900 calc(var(--u) * 8.4)/1 var(--font-board); perspective: 30em;
+  font: 900 calc(var(--u) * 6.6)/1 var(--font-board); perspective: 30em;
   animation: pp-flip 640ms var(--ease-out) calc(200ms + var(--i) * 140ms) both;
 }
 #lobby-game .pp-tile::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: rgb(27 18 64 / .3); }
 #lobby-game .pp-code-tiles.settled .pp-tile { animation: none; }
+/* The QR code on a cream plate (its own light quiet zone inside), framed like the code board, big enough to scan
+ * from the couch (13.5u: 259px on a 1080p set). It encodes the room link, /?CODE. */
+#lobby-game .pp-scan { display: flex; flex-direction: column; gap: calc(var(--u) * 1.3); width: calc(var(--u) * 13.5); }
+#lobby-game .pp-qr { margin: 0; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.1); }
+#lobby-game .pp-qr-plate {
+  display: block; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: calc(var(--u) * .9); background: #FFFBF2;
+  box-shadow: 0 0 0 calc(var(--u) * .3) #1A1048, 0 0 0 calc(var(--u) * .48) rgb(255 194 61 / .55), 0 calc(var(--u) * 1.4) calc(var(--u) * 3.6) rgb(0 0 0 / .55);
+}
+#lobby-game .pp-qr-plate svg { display: block; width: 100%; height: 100%; }
+#lobby-game .pp-qr figcaption { font: 600 calc(var(--u) * 1.5)/1.2 var(--font-ui); color: var(--text); white-space: nowrap; }
+#lobby-game .pp-qr figcaption b { font-weight: 800; color: var(--bulb); }
+#lobby-game .pp-invite { display: flex; flex-direction: column; gap: calc(var(--u) * .7); }
+/* Copy link and Text a link: violet keys (gold stays Start's). Copied! lights the key's face teal for a moment, like Sent! */
+#lobby-game .pp-key {
+  position: relative; top: 0; display: flex; align-items: center; justify-content: center; gap: calc(var(--u) * .6);
+  min-height: max(44px, calc(var(--u) * 3)); padding: 0 calc(var(--u) * 1); border: 0; border-radius: calc(var(--u) * .8);
+  background: var(--key); color: var(--text); font: 800 calc(var(--u) * 1.25)/1 var(--font-ui); text-decoration: none; white-space: nowrap; cursor: pointer;
+  box-shadow: 0 calc(var(--u) * .25) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2);
+  transition: top var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out), background var(--fast), color var(--fast);
+}
+#lobby-game .pp-key:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
+#lobby-game .pp-key:active { top: calc(var(--u) * .2); box-shadow: 0 calc(var(--u) * .05) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); }
+#lobby-game .pp-key .pp-ico { width: calc(var(--u) * 1.5); height: calc(var(--u) * 1.5); }
+#lobby-game .pp-key.copied, #lobby-game .pp-key.copied:hover { background: linear-gradient(180deg, #1E1650, #120C38); color: var(--teal); box-shadow: 0 calc(var(--u) * .25) 0 var(--key-edge), inset 0 0 0 2px rgb(30 211 194 / .6); }
+#lobby-game .pp-key.copied .pp-ico { animation: pp-pop var(--slow) var(--ease-out); }
+#lobby-game .pp-invite-link { margin: 0; font: 700 calc(var(--u) * 1.1)/1.3 var(--font-ui); color: var(--text); overflow-wrap: anywhere; user-select: all; text-align: center; }
+#lobby-game .pp-copybox { position: fixed; left: -100vw; top: 0; width: 1px; height: 1px; opacity: 0; }
 #lobby-game .pp-room { display: flex; flex-direction: column; gap: calc(var(--u) * 1.4); justify-content: center; }
 #lobby-game .pp-room-title { margin: 0; font: 800 calc(var(--u) * 2.2)/1 var(--font-ui); color: var(--text); display: flex; align-items: center; gap: calc(var(--u) * .9); }
 #lobby-game .pp-count { font-weight: 700; font-size: calc(var(--u) * 1.2); padding: calc(var(--u) * .25) calc(var(--u) * .9); border-radius: 999px; background: rgb(11 9 38 / .6); color: var(--text-2); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .12); }
@@ -691,7 +721,7 @@
 /* The seats not yet taken (the room holds 8): dim podiums with an empty dashed place for a face. */
 #lobby-game .pp-seat.open { --c: #4A3D78; opacity: .55; }
 #lobby-game .pp-seat.open .pp-av { background: rgb(11 9 38 / .55); border: calc(var(--u) * .2) dashed rgb(201 190 240 / .45); box-shadow: 0 calc(var(--u) * .4) calc(var(--u) * 1) rgb(0 0 0 / .35); }
-#lobby-game .pp-seat.open .pp-seat-name { min-height: calc(var(--u) * 3.25); }
+#lobby-game .pp-seat.open .pp-seat-name { min-height: calc(var(--u) * 1.65); }
 #lobby-game .pp-room-empty, #lobby-game .pp-room-hint { margin: 0; font: 600 calc(var(--u) * 1.8)/1.3 var(--font-ui); color: var(--text-2); }
 /* The settings: a console along the bottom of the set; chips are keys, the chosen one a cream key pressed in (gold is
  * kept for Start, the lobby's one main action). */

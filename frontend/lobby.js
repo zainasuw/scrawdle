@@ -505,7 +505,7 @@
     const b = $(room, '[data-gate="ask"]');
     const left = gateKind === "notnow" ? askAgainIn(lobby.lastDenied || 0) : 0;
     b.disabled = left > 0;
-    b.textContent = gateKind === "notnow" ? (left > 0 ? `Ask again in ${left}s` : "Ask again") : "Ask to join";
+    b.textContent = gateKind === "notnow" ? (left > 0 ? `Ask again in ${left} ${left === 1 ? "second" : "seconds"}` : "Ask again") : "Ask to join";
     if (!left && gateTimer) { clearInterval(gateTimer); gateTimer = 0; }
   }
   setState("room");

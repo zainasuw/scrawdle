@@ -47,7 +47,7 @@
   }
 
   // A square SVG: the light quiet zone (4 squares wide, as scanners expect) all round, then the code.
-  function qrSvg(modules, { quiet = 4, dark = "#1B1240", light = "#FFFBF2", label = "" } = {}) {
+  function qrSvg(modules, { quiet = 4, dark = "#1B1240", light = "#FFF8E8", label = "" } = {}) {
     const size = modules.length + quiet * 2;
     const a11y = label ? ` role="img" aria-label="${String(label).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch])}"` : ' aria-hidden="true"';
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"${a11y}>`

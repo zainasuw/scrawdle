@@ -120,7 +120,7 @@
   box-shadow: inset 0 2px 0 rgb(255 255 255 / .22), inset 0 -6px 0 rgb(0 0 0 / .35), 0 0 0 2px var(--bezel), 0 18px 40px rgb(0 0 0 / .5);
   animation: pp-rise-in var(--slow) var(--ease-out) both;
 }
-#lobby .lobby-gate-title { margin: 6px 0 0; font-family: var(--font-show); font-weight: 400; font-size: 30px; line-height: 1.12; color: var(--text); text-wrap: balance; outline: none; }
+#lobby .lobby-gate-title { margin: 6px 0 0; font-family: var(--font-show); font-weight: 400; font-size: 32px; line-height: 1.1; color: var(--text); text-wrap: balance; outline: none; }
 #lobby .lobby-gate-text { margin: 0; max-width: 30ch; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--text-2); text-wrap: pretty; }
 #lobby .lobby-gate-home {
   position: relative; top: 0; align-self: stretch; margin-top: 8px; min-height: 56px; padding: 0 22px; border: 0; border-radius: 16px;
@@ -702,7 +702,7 @@
 #lobby-game .pp-scan { display: flex; flex-direction: column; gap: calc(var(--u) * 1.3); width: calc(var(--u) * 13.5); }
 #lobby-game .pp-qr { margin: 0; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.1); }
 #lobby-game .pp-qr-plate {
-  display: block; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: calc(var(--u) * .9); background: #FFFBF2;
+  display: block; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: calc(var(--u) * .9); background: #FFF8E8;
   box-shadow: 0 0 0 calc(var(--u) * .3) #1A1048, 0 0 0 calc(var(--u) * .48) rgb(255 194 61 / .55), 0 calc(var(--u) * 1.4) calc(var(--u) * 3.6) rgb(0 0 0 / .55);
 }
 #lobby-game .pp-qr-plate svg { display: block; width: 100%; height: 100%; }
@@ -731,10 +731,10 @@
 #lobby-game .pp-seat { padding-bottom: calc(var(--u) * 1); }
 #lobby-game .pp-seat.pop { animation: pp-rise-in 560ms var(--ease-out) both; }
 #lobby-game .pp-seat .pp-tag-ink { position: absolute; z-index: 2; top: calc(var(--u) * 1.6); right: 0; }
-/* Remove: a small violet key over the seat's corner, shown while the pointer is on the seat or a key lands on it, and
- * always on a touch screen. It asks first. */
+/* Remove: a small violet key hanging from the bottom of the seat's name panel (so it never covers the face or the
+ * name), shown while the pointer is on the seat or a key lands on it, and always on a touch screen. It asks first. */
 #lobby-game .pp-seat-kick {
-  position: absolute; z-index: 3; left: calc(var(--u) * -.4); top: calc(var(--u) * 1.2);
+  position: absolute; z-index: 3; left: 50%; bottom: calc(var(--u) * -.9); translate: -50% 0; white-space: nowrap;
   display: inline-flex; align-items: center; gap: calc(var(--u) * .35); min-height: max(44px, calc(var(--u) * 2.4)); padding: 0 calc(var(--u) * .8) 0 calc(var(--u) * .55);
   border: 0; border-radius: 999px; background: var(--key); color: var(--text); font: 800 calc(var(--u) * 1.05)/1 var(--font-ui); cursor: pointer;
   box-shadow: 0 calc(var(--u) * .2) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2), 0 calc(var(--u) * .5) calc(var(--u) * 1) rgb(0 0 0 / .45);

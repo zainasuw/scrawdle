@@ -317,6 +317,13 @@ A cream die with a category mark on each face, tumbling onto a violet drum with 
 ### Contestant podium (signature)
 An avatar (ringed in the contestant's colour over a bezel ring) above a dark desk lit along its top in that colour, a lit name panel with the name in white 800 and the score in gold Big Shoulders, and a status line under it. The leader's podium turns gold and wears the crown. On the leaderboard page, the top three stand on podiums of three heights (gold, teal, magenta lights) and places 4 to 10 are scoreboard rows with their numbers on flip tiles; drawings that tie share a step and its colour. In the TV lobby all eight seats show: a free seat is a dim podium (55% opacity, a muted #4A3D78 light) with a dashed empty circle where the face goes, hidden from screen readers.
 
+### The TV lobby's ways in
+The lobby's left side is how phones get in. "Grab your phones!" runs across the top in Shrikhand on one line; under it, the typed way (three numbered steps on cream tiles: go to the address, tap Join a game, type the code) over the room code on flip tiles in their dark board, and beside it the QR code: dark Ink squares on a flat cream plate (#FFF8E8, its own four-square quiet zone inside), framed like the code board with a dark ring and a gold hairline, 13.5u wide, captioned "or **scan to join**" with the last words in Bulb Glow. Under the QR code, two violet keys stacked: Copy link and Text a link (Share link where the device has a share sheet), 3u tall (never under 44px), each with a 2.8-stroke line icon. After a copy the key says "Copied!" for two seconds on a dark face with a teal ring and teal lettering, like Sent!. The QR code is made in the browser (vendor/qrcode.js); the room link never goes to an outside service. Start stays the lobby's only gold.
+
+On a seat in the lobby, Remove is a small violet pill (an x and "Remove", Bricolage 800 1.05u, at least 44px tall) hanging from the bottom of the seat's name panel, so it never covers the face or the name. It shows while the pointer is on the seat or a key lands on it, and always on a touch screen; it asks first in the yes/no box. There is no Remove once the game has started.
+
+A phone that can't get in (the host removed it, or the game already started) sees the name step's pad with the room code on its little board, the reason as a Shrikhand title ("The host removed you from this room.", "This game has already started."), one Lilac line saying what to do next, and one violet Back to home key.
+
 ### Clock (signature)
 A dark dial with a teal ring, tick marks and Big Shoulders digits glowing in the ring colour. In the last ten seconds the ring turns magenta and pulses once a second.
 

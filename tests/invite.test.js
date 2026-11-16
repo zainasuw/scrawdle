@@ -56,7 +56,7 @@ test("the SVG draws exactly the dark squares, offset by a light quiet zone four 
   const svg = qrSvg(m, { label: 'Room "HTKK" <link>' });
   const size = m.length + quiet * 2;
   assert.ok(svg.includes(`viewBox="0 0 ${size} ${size}"`));
-  assert.ok(svg.includes(`<rect width="${size}" height="${size}" fill="#FFFBF2"/>`), "the quiet zone is light");
+  assert.ok(svg.includes(`<rect width="${size}" height="${size}" fill="#FFF8E8"/>`), "the quiet zone is light");
   assert.ok(svg.includes('fill="#1B1240"'), "the squares are dark ink");
   assert.ok(svg.includes('aria-label="Room &quot;HTKK&quot; &lt;link&gt;"'), "a label is escaped");
   assert.ok(qrSvg(m).includes('aria-hidden="true"'));

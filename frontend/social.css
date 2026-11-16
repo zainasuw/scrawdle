@@ -731,10 +731,10 @@
 #lobby-game .pp-seat { padding-bottom: calc(var(--u) * 1); }
 #lobby-game .pp-seat.pop { animation: pp-rise-in 560ms var(--ease-out) both; }
 #lobby-game .pp-seat .pp-tag-ink { position: absolute; z-index: 2; top: calc(var(--u) * 1.6); right: 0; }
-/* Remove: a small violet key hanging from the bottom of the seat's name panel (so it never covers the face or the
+/* Remove: a small violet key hanging just below the seat (so it never touches the face or the
  * name), shown while the pointer is on the seat or a key lands on it, and always on a touch screen. It asks first. */
 #lobby-game .pp-seat-kick {
-  position: absolute; z-index: 3; left: 50%; bottom: calc(var(--u) * -.9); translate: -50% 0; white-space: nowrap;
+  position: absolute; z-index: 3; left: 50%; bottom: calc(var(--u) * -1.7); translate: -50% 0; white-space: nowrap;
   display: inline-flex; align-items: center; gap: calc(var(--u) * .35); min-height: max(44px, calc(var(--u) * 2.4)); padding: 0 calc(var(--u) * .8) 0 calc(var(--u) * .55);
   border: 0; border-radius: 999px; background: var(--key); color: var(--text); font: 800 calc(var(--u) * 1.05)/1 var(--font-ui); cursor: pointer;
   box-shadow: 0 calc(var(--u) * .2) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2), 0 calc(var(--u) * .5) calc(var(--u) * 1) rgb(0 0 0 / .45);

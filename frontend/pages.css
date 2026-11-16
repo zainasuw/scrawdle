@@ -46,9 +46,27 @@ body::before {
 #page.is-off, #page.is-off > .gallery-page { display: flex; flex-direction: column; }
 #page.is-off { min-height: 100dvh; }
 #page.is-off > .gallery-page { flex: 1; }
-#page.is-off .gallery-heading { margin: auto 0 6px; text-align: center; }
-#page.is-off .gallery-note { margin: 0 auto auto; padding-bottom: 12vh; max-width: 34ch; text-align: center; font-size: 18px; line-height: 1.5; }
-#page.is-off .gallery-note a.quiet { display: inline-block; margin: 10px 0 0; }
+#page.is-off .off-prop { margin-top: auto; }
+#page.is-off .gallery-heading { margin: 0 0 6px; text-align: center; }
+#page.is-off .gallery-note { margin: 0 auto; max-width: 34ch; text-align: center; font-size: 18px; line-height: 1.5; }
+/* The board with its lights off: the marquee's violet frame, a ring of unlit bulbs and three blank tiles, dimmed. */
+#page .off-prop {
+  position: relative; align-self: center; display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: min(300px, 72vw); aspect-ratio: 2.6; margin-bottom: 26px; border-radius: 28px; opacity: .5;
+  background: linear-gradient(180deg, #2B1C63, #1A1150); box-shadow: inset 0 0 0 3px rgb(255 194 61 / .22), 0 18px 40px rgb(0 0 0 / .45);
+}
+#page .off-prop::before { content: ""; position: absolute; inset: 9px; border: 6px dotted rgb(255 231 166 / .28); border-radius: 20px; }
+#page .off-prop::after { content: ""; position: absolute; inset: 22px; z-index: 0; border-radius: 12px; background: #0D0A2A; }
+#page .off-prop i { position: relative; z-index: 1; width: 15%; aspect-ratio: .78; border-radius: 7px; background: linear-gradient(180deg, #FFF8E8 0 49%, #F1E2C2 51% 100%); box-shadow: 0 4px 0 #B9945A; }
+/* Two keys: Back to home and My drawings, violet, the same size. */
+#page .off-keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 22px auto auto; padding-bottom: 10vh; }
+#page .off-key {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 170px; min-height: 54px; padding: 0 22px; border-radius: 16px;
+  background: linear-gradient(180deg, #4A35A8, #3A2890); color: var(--text); font: 800 17px/1 var(--font-ui); text-decoration: none;
+  box-shadow: 0 5px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2);
+}
+#page .off-key:hover { background: linear-gradient(180deg, #5640B8, #43309C); }
+#page .off-key:active { transform: translateY(4px); box-shadow: 0 1px 0 #1A1150, inset 0 2px 0 rgb(255 255 255 / .2); }
 
 /* ---------- The header: the show's name (goes home) and the house key ---------- */
 #page .app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

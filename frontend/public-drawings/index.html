@@ -47,12 +47,9 @@
         const note = document.querySelector(".gallery-note");
         document.getElementById("page").classList.add("is-off");
         note.textContent = "This one's switched off for now. Your drawings stay on your device.";
-        note.append(document.createElement("br"));
-        const home = document.createElement("a");
-        home.className = "quiet";
-        home.href = "../";
-        home.textContent = "Back to home";
-        note.append(home);
+        // A dimmed marquee (the board with its lights off) over the title, and two keys under the note.
+        document.querySelector(".gallery-heading").insertAdjacentHTML("beforebegin", '<div class="off-prop" aria-hidden="true"><i></i><i></i><i></i></div>');
+        note.insertAdjacentHTML("afterend", '<p class="off-keys"><a class="off-key" href="../">Back to home</a><a class="off-key" href="../#my-drawings">My drawings</a></p>');
       } else {
         gallery.showPublic();
       }

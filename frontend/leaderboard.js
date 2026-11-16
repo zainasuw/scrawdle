@@ -201,10 +201,9 @@
       note.classList.remove("loading");
       container.classList.add("is-off");
       note.textContent = "This one's switched off for now. Your drawings stay on your device.";
-      note.append(el("br"));
-      const go = el("a", "quiet", "Back to home");
-      go.href = "../";
-      note.append(go);
+      // A dimmed marquee (the board with its lights off) over the title, and two keys under the note.
+      heading.insertAdjacentHTML("beforebegin", '<div class="off-prop" aria-hidden="true"><i></i><i></i><i></i></div>');
+      note.insertAdjacentHTML("afterend", '<p class="off-keys"><a class="off-key" href="../">Back to home</a><a class="off-key" href="../#my-drawings">My drawings</a></p>');
       links.hidden = true;
       return;
     }

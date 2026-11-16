@@ -846,7 +846,11 @@
       if (open && found[open] && await board.restore(open)) {
         showGame();
         if (session(ScrawdleDrawing.FINISH_KEY) === "1") finish.open();
-      } else showHome();
+      } else {
+        showHome();
+        // A link to /#my-drawings (the My drawings key on a page that's switched off) opens My drawings over home.
+        if (location.hash === "#my-drawings") { history.replaceState(null, "", location.pathname + location.search); sketchbook.show(); }
+      }
     })();
   </script>
 </body>

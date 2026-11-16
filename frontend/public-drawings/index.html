@@ -44,7 +44,9 @@
         document.querySelector(".gallery-sub").hidden = true;
         document.getElementById("lb-link").remove(); // (a page-level p: the hidden attribute alone loses to its reset)
         const note = document.querySelector(".gallery-note");
-        note.textContent = "Public drawings aren't available right now. ";
+        document.getElementById("page").classList.add("is-off");
+        note.textContent = "This one's switched off for now. Your drawings stay on your device.";
+        note.append(document.createElement("br"));
         const home = document.createElement("a");
         home.className = "quiet";
         home.href = "../";

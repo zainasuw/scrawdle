@@ -41,6 +41,14 @@ body::before {
 }
 #page { display: block; max-width: 1200px; margin: 0 auto; padding: 16px 16px 24px; }
 #page .gallery-page { display: block; }
+/* Switched off (publicGallery in supabase-config.js): the page's title and a short note stand in the middle of the
+   stage under the header, with the way home. */
+#page.is-off, #page.is-off > .gallery-page { display: flex; flex-direction: column; }
+#page.is-off { min-height: 100dvh; }
+#page.is-off > .gallery-page { flex: 1; }
+#page.is-off .gallery-heading { margin: auto 0 6px; text-align: center; }
+#page.is-off .gallery-note { margin: 0 auto auto; padding-bottom: 12vh; max-width: 34ch; text-align: center; font-size: 18px; line-height: 1.5; }
+#page.is-off .gallery-note a.quiet { display: inline-block; margin: 10px 0 0; }
 
 /* ---------- The header: the show's name (goes home) and the house key ---------- */
 #page .app-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

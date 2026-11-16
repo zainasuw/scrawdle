@@ -199,7 +199,9 @@
     // Off (publicGallery in supabase-config.js) or not connected: a short note and the home key, nothing loads.
     if (typeof root.scrawdlePublicGallery !== "function") {
       note.classList.remove("loading");
-      note.textContent = "The leaderboard isn't available right now. ";
+      container.classList.add("is-off");
+      note.textContent = "This one's switched off for now. Your drawings stay on your device.";
+      note.append(el("br"));
       const go = el("a", "quiet", "Back to home");
       go.href = "../";
       note.append(go);

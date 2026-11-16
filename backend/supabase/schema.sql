@@ -296,8 +296,10 @@ grant execute on function public.lobby_exists(text) to anon;
 --   $$
 -- );
 
--- Forget lobby codes older than a day. Not scheduled here, same as the block above; on Kevin's
--- project this was scheduled by updates/001-lobbies-and-daily-scrawl.sql.
+-- Forget lobby codes older than a day. This is scheduled by updates/007-clear-old-rooms.sql: run that
+-- file once in the SQL Editor (it turns on pg_cron, removes any earlier 'purge-old-lobbies' job by
+-- name, then schedules this one, so running it again is safe). The block below is what it schedules.
+-- (On Kevin's project it was first scheduled by updates/001-lobbies-and-daily-scrawl.sql.)
 -- select cron.schedule(
 --   'purge-old-lobbies',
 --   '15 10 * * *',

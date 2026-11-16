@@ -4,8 +4,6 @@
 
 A drawing party game for friends and families. Put Scrawdle on a TV or laptop, everyone joins on their own phone with a short room code, a die rolls to pick one word to draw, and then everyone votes for their favourite drawing without knowing who drew what.
 
-Programmer: **Zainab Stanikzy** ([zainasuw](https://github.com/zainasuw))
-
 ![The TV lobby: a big room code, a QR code to scan, and the players who have joined](docs/tv-lobby.jpg)
 
 ## How it plays
@@ -76,7 +74,7 @@ During the build, `build/write-config.js` writes them into `frontend/supabase-co
 
 ## About
 
-What Scrawdle includes:
+Scrawdle is designed and programmed by **Zainab Stanikzy** ([zainasuw](https://github.com/zainasuw)). What it includes:
 
 - A same-room party game: a TV host screen, joining by room code on phones, rounds, anonymous voting, points, a scoreboard and a winner podium.
 - One word to draw, picked by an animated 3D dice roll from an original list of 252 kid-friendly words.

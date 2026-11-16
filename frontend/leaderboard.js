@@ -200,7 +200,7 @@
     if (typeof root.scrawdlePublicGallery !== "function") {
       note.classList.remove("loading");
       container.classList.add("is-off");
-      note.textContent = "This one's switched off for now. Your own drawings are still saved on your device.";
+      note.textContent = "The leaderboard is switched off for now. Your own drawings are still saved on your device.";
       // A dimmed marquee (the board with its lights off) over the title, and two keys under the note.
       heading.insertAdjacentHTML("beforebegin", '<div class="off-prop" aria-hidden="true"><i></i><i></i><i></i></div>');
       note.insertAdjacentHTML("afterend", '<p class="off-keys"><a class="off-key" href="../">Back to home</a><a class="off-key" href="../#my-drawings">My drawings</a></p>');

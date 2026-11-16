@@ -519,8 +519,8 @@
       },
       {
         "name": "die-idle",
-        "value": "4.8s ease-in-out infinite; lift 420ms ease-out on hover",
-        "purpose": "Quick draw's die resting on its drum on the home stage."
+        "value": "4.8s ease-in-out infinite; lift 420ms ease-out on hover, settle back 300ms",
+        "purpose": "Quick draw's die resting on its drum on the home stage. The bob moves the flat .dice-air wrapper, never a part of the 3D die, and pauses on hover; the lift is a transition on the hop, so neither one snaps."
       }
     ],
     "breakpoints": [

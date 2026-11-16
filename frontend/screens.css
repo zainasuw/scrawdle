@@ -559,8 +559,16 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   }
   #setup .quick-stage { display: block; position: relative; z-index: 1; --dice-size: var(--die); }
   #setup .quick-stage .dice-burst { display: none; }
-  #setup .quick-stage .dice-hop { animation: die-idle 4.8s ease-in-out infinite; }
-  #setup .quick-card:hover .quick-stage .dice-hop { animation: die-lift 420ms var(--ease-out) both; }
+  /* The idle bob moves the flat wrapper (.dice-air), outside the die's 3D chain, and pauses where it is on hover;
+     the hover lift is a transition on the hop, so it starts from wherever the die is and settles back smoothly
+     (as two animations taking turns on the hop, the die snapped down at the start of a hover and jumped back
+     from the lifted tilt when the pointer left). */
+  #setup .quick-stage .dice-air { animation: die-idle 4.8s ease-in-out infinite; will-change: transform; }
+  #setup .quick-card:hover .quick-stage .dice-air { animation-play-state: paused; }
+  #setup .quick-stage .dice-hop { transition: transform 300ms var(--ease-out); }
+  #setup .quick-card:hover .quick-stage .dice-hop { transform: translateY(calc(var(--u) * -1.4)) rotate(-7deg); transition-duration: 420ms; }
+  /* no landing on the home stage, so no landing wink either (it played once each time home came up) */
+  #setup .quick-stage .dice.landed .dice-face.up svg { animation: none; }
   #setup .quick-card .quick-die { display: none; }
   #setup .quick-card:not(.has-die) .quick-stage { display: none; }
   #setup .quick-card:not(.has-die) .quick-die { display: block; width: calc(var(--u) * 12); height: calc(var(--u) * 12); margin: 0 0 calc(var(--u) * 2); }
@@ -736,7 +744,6 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
   #setup .home-party, #setup.offline .home-party { grid-row: 4; padding-top: calc(var(--u) * 3); }
 }
 @keyframes die-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--u, 10px) * -.6)); } }
-@keyframes die-lift { to { transform: translateY(calc(var(--u, 10px) * -1.4)) rotate(-7deg); } }
 
 /* =====================================================================================================================
    THE REVEAL: the die tumbles onto the lit stage table and lands on a category; the word flips onto cream tiles
@@ -1089,4 +1096,5 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
 @media (prefers-reduced-motion: reduce) {
   #setup *, #slot *, #finish *, :is(#help, .ask-box, #leave-drawing)[open] { animation: none !important; }
   #setup *, #slot *, #finish * { transition-duration: 0ms !important; }
+  #setup .quick-card:hover .quick-stage .dice-hop { transform: none; } /* the die stays put; the key still lights */
 }

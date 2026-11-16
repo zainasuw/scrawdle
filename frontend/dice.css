@@ -45,15 +45,20 @@
   position: absolute; inset: 0; border-radius: var(--r); display: grid; place-items: center;
 }
 .dice:not(#_) .dice-core { position: absolute; inset: 0; transform-style: preserve-3d; }
-/* A solid inner cube just inside the six faces (square-cornered, a touch smaller): where the faces' rounded corners
- * leave a notch along an edge, it shows cream there instead of the stage behind, so the die stays one block. */
-.dice:not(#_) .dice-core i { inset: 2.5%; border-radius: calc(var(--r) * .25); background: #EBCB92; }
-.dice:not(#_) .dice-core i:nth-child(1) { transform: translateZ(calc(var(--s) * .475)); }
-.dice:not(#_) .dice-core i:nth-child(2) { transform: rotateY(180deg) translateZ(calc(var(--s) * .475)); }
-.dice:not(#_) .dice-core i:nth-child(3) { transform: rotateY(90deg) translateZ(calc(var(--s) * .475)); }
-.dice:not(#_) .dice-core i:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--s) * .475)); }
-.dice:not(#_) .dice-core i:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--s) * .475)); }
-.dice:not(#_) .dice-core i:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--s) * .475)); }
+/* A solid inner cube just under the six faces: where the faces' rounded corners leave a notch along an edge, it
+ * shows cream there instead of the stage behind, so the die stays one block. It sits only half a percent under the
+ * faces and reaches almost to their edges, because the browser cuts the faces into pieces where other planes of the
+ * die cross them and leaves hairline cracks between the pieces. While the die moves (the home stage's bob, the
+ * roll) those cracks land on different pixels each frame, and with a smaller core they showed the dark stage
+ * through, as dark specks twinkling on the cream. Its corners are rounded close to the faces' own, so they never
+ * poke out past a face's rounded corner. */
+.dice:not(#_) .dice-core i { inset: .5%; border-radius: calc(var(--s) * .07); background: #EBCB92; }
+.dice:not(#_) .dice-core i:nth-child(1) { transform: translateZ(calc(var(--s) * .495)); }
+.dice:not(#_) .dice-core i:nth-child(2) { transform: rotateY(180deg) translateZ(calc(var(--s) * .495)); }
+.dice:not(#_) .dice-core i:nth-child(3) { transform: rotateY(90deg) translateZ(calc(var(--s) * .495)); }
+.dice:not(#_) .dice-core i:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--s) * .495)); }
+.dice:not(#_) .dice-core i:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--s) * .495)); }
+.dice:not(#_) .dice-core i:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--s) * .495)); }
 /* A slightly smaller square-cornered cube just inside the faces. Where three rounded face corners meet, they leave
  * a notch at the vertex, and mid-roll one face's corner can stand out past its neighbour's; the shell fills that
  * notch so the silhouette stays one rounded block. It sits inside the faces' rounding, so it never shows past them. */

@@ -122,13 +122,20 @@
 }
 #lobby .lobby-gate-title { margin: 6px 0 0; font-family: var(--font-show); font-weight: 400; font-size: 32px; line-height: 1.1; color: var(--text); text-wrap: balance; outline: none; }
 #lobby .lobby-gate-text { margin: 0; max-width: 30ch; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--text-2); text-wrap: pretty; }
-#lobby .lobby-gate-home {
-  position: relative; top: 0; align-self: stretch; margin-top: 8px; min-height: 56px; padding: 0 22px; border: 0; border-radius: 16px;
+#lobby .lobby-gate-dots { margin: 4px 0 -2px; }
+#lobby .lobby-gate-keys { align-self: stretch; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+#lobby .lobby-gate-key {
+  position: relative; top: 0; min-height: 56px; padding: 0 22px; border: 0; border-radius: 16px;
   background: var(--key); color: var(--text); font: 800 19px/1 var(--font-ui); cursor: pointer;
   box-shadow: 0 5px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); transition: top var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out), background var(--fast);
 }
-#lobby .lobby-gate-home:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
-#lobby .lobby-gate-home:active { top: 4px; box-shadow: 0 1px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); }
+#lobby .lobby-gate-key:hover:not(:disabled) { background: linear-gradient(180deg, #5641B8, #4330A0); }
+#lobby .lobby-gate-key:active:not(:disabled) { top: 4px; box-shadow: 0 1px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); }
+#lobby .lobby-gate-key:disabled { background: #2B2160; color: var(--text-2); box-shadow: inset 0 0 0 2px rgb(201 190 240 / .25); cursor: default; }
+/* Back to home / Cancel: the same size, a quieter face (an outline, no fill). */
+#lobby .lobby-gate-quiet { background: transparent; color: var(--text); box-shadow: inset 0 0 0 2px rgb(201 190 240 / .45); }
+#lobby .lobby-gate-quiet:hover:not(:disabled) { background: rgb(255 255 255 / .08); }
+#lobby .lobby-gate-quiet:active:not(:disabled) { top: 0; box-shadow: inset 0 0 0 2px rgb(201 190 240 / .45); }
 
 /* Joining…: three bulbs light up in turn. */
 #lobby .lobby-connecting { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }
@@ -599,6 +606,30 @@
 #lobby-game .pp-pips i.on { background: var(--gold); box-shadow: 0 0 calc(var(--u) * .6) var(--gold); }
 #lobby-game .pp-pips i.now { background: var(--magenta); box-shadow: 0 0 calc(var(--u) * .7) var(--magenta); }
 #lobby-game .pp-top-gap { flex: 1; }
+/* "<name> wants to join": a small lit card (the toast's dark face and gold hairline) floating in the top strip between
+ * the round counter and the room code, never over the word, the drawings or the votes. Let in is a violet key (Start
+ * is gold, not this), Not now an outlined one; both at least 44px. */
+#lobby-game .pp-ask {
+  position: absolute; left: 53%; top: calc(var(--u) * -1.3); translate: -50% 0; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .35);
+  max-width: calc(var(--u) * 24); padding: calc(var(--u) * .45) calc(var(--u) * .9) calc(var(--u) * .55); border-radius: calc(var(--u) * 1.1);
+  background: linear-gradient(180deg, #221A5A, #120C38); box-shadow: inset 0 0 0 2px rgb(255 194 61 / .5), 0 calc(var(--u) * .8) calc(var(--u) * 2) rgb(0 0 0 / .55);
+  animation: pp-rise-in var(--slow) var(--ease-out) both;
+}
+#lobby-game .pp-ask-text { display: flex; align-items: center; gap: calc(var(--u) * .4); max-width: 100%; margin: 0; font: 600 calc(var(--u) * 1.15)/1.2 var(--font-ui); color: var(--text-2); white-space: nowrap; }
+#lobby-game .pp-ask-text b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 800; color: #fff; }
+#lobby-game .pp-ask-ico { width: calc(var(--u) * 1.4); height: calc(var(--u) * 1.4); color: var(--teal); }
+#lobby-game .pp-ask-keys { display: flex; align-items: center; gap: calc(var(--u) * .5); }
+#lobby-game .pp-ask-key {
+  position: relative; top: 0; min-height: max(44px, calc(var(--u) * 2.5)); padding: 0 calc(var(--u) * 1); border: 0; border-radius: calc(var(--u) * .7);
+  background: var(--key); color: var(--text); font: 800 calc(var(--u) * 1.1)/1 var(--font-ui); white-space: nowrap; cursor: pointer;
+  box-shadow: 0 calc(var(--u) * .2) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); transition: top var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out), background var(--fast);
+}
+#lobby-game .pp-ask-key:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
+#lobby-game .pp-ask-key:active { top: calc(var(--u) * .15); box-shadow: 0 1px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); }
+#lobby-game .pp-ask-no { background: transparent; box-shadow: inset 0 0 0 2px rgb(201 190 240 / .45); }
+#lobby-game .pp-ask-no:hover { background: rgb(255 255 255 / .08); }
+#lobby-game .pp-ask-no:active { top: 0; box-shadow: inset 0 0 0 2px rgb(201 190 240 / .45); }
+#lobby-game .pp-ask-more { font: 700 calc(var(--u) * 1.05)/1 var(--font-ui); color: var(--text-2); white-space: nowrap; }
 #lobby-game .pp-code {
   display: flex; align-items: center; gap: calc(var(--u) * .9); padding: calc(var(--u) * .55) calc(var(--u) * .65) calc(var(--u) * .55) calc(var(--u) * 1.2);
   border-radius: calc(var(--u) * 1); background: rgb(11 9 38 / .65); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .12);

@@ -240,20 +240,65 @@
     return !lock.includes(myId);
   }
   // Why this browser can't go into a room, or null if it can: "removed" (the host removed it from this room today)
-  // comes first, then "started" (the room locked when its game started, and this player wasn't in it).
+  // comes first, then "full", then "started" (the room locked when its game started and this player wasn't in it:
+  // they can ask the host to let them in, see below).
   function joinBlock({ kicks, code, day, players, me }) {
     if (code && wasKicked(kicks, code, day)) return "removed";
-    if (players && lockedOut(players, me)) return "started";
+    if (players && lockedOut(players, me)) return roomIsFull(players) ? "full" : "started";
     return null;
   }
-  // What a phone sees when it can't get in. Kid-friendly, and says what to do next.
+  // Full: everyone here plus everyone the lock is keeping a place for (a player who dropped out can come back) fills
+  // the room (the host's TV and 8 players).
+  function roomIsFull(players, max = MAX_PLAYERS) {
+    const ids = new Set((players || []).map((p) => p.id));
+    for (const id of roomLock(players) || []) ids.add(id);
+    return ids.size >= max;
+  }
+
+  /* ----- Asking to join a game that has started -----
+   * A phone that finds the room locked still picks a name, then asks the host (lobby:ask). The host's TV shows
+   * "<name> wants to join" with Let in and Not now. Let in adds the phone to the lock's list and it joins for the next
+   * round; Not now tells it kindly, and it can ask again after a short wait. One request per phone at a time, kept
+   * until the host answers, the phone cancels, or the room opens again (then the phone just comes in). */
+  const ASK_COOLDOWN_MS = 30000;      // after a Not now, how long before that phone can ask again
+  const ASK_MAX_AGE_MS = 15 * 60000;  // a request nobody answered is dropped after this long
+  function cleanAsk(body) {
+    if (!body || typeof body.id !== "string" || !body.id || body.id.length > 80) return null;
+    return { id: body.id, name: cleanName(body.name) || "Player" };
+  }
+  // What the host does with a request: "queue" it, or answer straight away ("removed", "full", "in": already on the
+  // list), or ignore it ("open": no lock, the phone can just come in; "pending": already waiting; "cooldown": asked
+  // again too soon after a Not now; "bad").
+  function askDecision({ ask, players, removed, pending, deniedAt, now = Date.now(), cooldown = ASK_COOLDOWN_MS }) {
+    const a = cleanAsk(ask);
+    if (!a) return "bad";
+    if (removed && removed.has && removed.has(a.id)) return "removed";
+    const lock = roomLock(players);
+    if (!lock) return "open";
+    if (lock.includes(a.id)) return "in";
+    if (pending && pending.has && pending.has(a.id)) return "pending";
+    if (deniedAt && now - (deniedAt.get(a.id) || -Infinity) < cooldown) return "cooldown";
+    if (roomIsFull(players)) return "full";
+    return "queue";
+  }
+  // The requests still waiting, oldest first, without any too old to keep.
+  function openAsks(asks, now = Date.now(), maxAge = ASK_MAX_AGE_MS) {
+    return [...(asks || [])].filter((a) => a && now - a.at < maxAge).sort((a, b) => a.at - b.at);
+  }
+  // Whole seconds until a phone told Not now can ask again (0: it can).
+  const askAgainIn = (deniedAt, now = Date.now(), cooldown = ASK_COOLDOWN_MS) => Math.max(0, Math.ceil((deniedAt + cooldown - now) / 1000));
+
+  // What a phone sees when it can't get in, or while it waits. Kid-friendly, and says what to do next.
   const BLOCK_MESSAGES = {
     removed: { title: "The host removed you from this room.", text: "You can still draw on your own, or join another room." },
-    started: { title: "This game has already started.", text: "Ask the host to start a new room." },
+    started: { title: "This game has already started.", text: "Ask the host to let you in, or draw on your own." },
+    full: { title: "This room is full.", text: "It has room for 8 players. You can still draw on your own." },
+    waiting: { title: "Waiting for the host to let you in\u2026", text: "Your name is on the big screen. If they say yes, you'll draw next round." },
+    notnow: { title: "The host can't let you in right now.", text: "You can draw on your own, or ask again in a little while." },
   };
 
   const pure = { MAX_PLAYERS, CODE_LENGTH, normalizeCode, codeFromSearch, lobbyLink, cleanName, randomName, unusedName, seatPicks, playersFromState, isOverCap, activeGameOf, unwrap, VOTE_MS, VOTE_COOLDOWN_MS, VOTE_MIN_PLAYERS, mayKick, voteBlocker, voteOutcome, voteEnforcer, wasKicked, rememberKick,
-    LOCK_MAX, cleanLock, lockList, roomLock, lockedOut, joinBlock, BLOCK_MESSAGES };
+    LOCK_MAX, cleanLock, lockList, roomLock, lockedOut, joinBlock, roomIsFull, ASK_COOLDOWN_MS, ASK_MAX_AGE_MS, cleanAsk, askDecision, openAsks, askAgainIn, BLOCK_MESSAGES };
   if (typeof module !== "undefined" && module.exports) { module.exports = pure; return; }
 
   /* ---------- Browser side ---------- */
@@ -317,7 +362,9 @@
   const lobby = { code: null, channel: null, joinedAt: 0, players: [], game: null, cleanup: null, listeners: new Map(), watchers: new Set(), gameDef: null, ready: false,
     kicked: new Set(), passedVotes: new Set(), vote: null, voteTimer: 0, cooldowns: new Map(), rekickedAt: new Map(),
     seen: new Set(), lock: null, // the host's: everyone seen in the room while it was open, and the lock once a game starts
-    peek: null, closing: null }; // a room's channel opened before its name step, to see whether it's locked; a channel on its way out
+    peek: null, closing: null, // a room's channel opened before its name step, to see whether it's locked; a channel on its way out
+    asks: new Map(), deniedAt: new Map(), askWatchers: new Set(), // the host's: requests to join a game that has started
+    admittedUntil: 0, joinedLate: false }; // this phone was let in by the host (the lock's list catches up a moment later)
 
   // Lobbies this browser was kicked from today, so the same invite link can't put it back in.
   const KICKS_KEY = "scrawdle-lobby-kicks"; // localStorage: { CODE: "YYYY-MM-DD" }
@@ -350,9 +397,14 @@
     </form>
     <section class="lobby-gate" aria-labelledby="lobby-gate-title" aria-describedby="lobby-gate-text">
       <p class="lobby-join-room">Room <b class="lobby-join-code lobby-gate-code"></b></p>
+      <span class="lobby-gate-dots lobby-connecting-dots" aria-hidden="true"><i></i><i></i><i></i></span>
       <h1 class="lobby-gate-title" id="lobby-gate-title" tabindex="-1"></h1>
       <p class="lobby-gate-text" id="lobby-gate-text"></p>
-      <button type="button" class="lobby-gate-home">Back to home</button>
+      <div class="lobby-gate-keys">
+        <button type="button" class="lobby-gate-key" data-gate="ask">Ask to join</button>
+        <button type="button" class="lobby-gate-key" data-gate="solo">Draw on my own</button>
+        <button type="button" class="lobby-gate-key lobby-gate-quiet" data-gate="home">Back to home</button>
+      </div>
     </section>
     <div class="lobby-connecting" role="status"><span class="lobby-connecting-dots" aria-hidden="true"><i></i><i></i><i></i></span><p class="lobby-connecting-text">Joining the room…</p></div>
     <div class="lobby-body">
@@ -424,16 +476,37 @@
   };
   // A phone that can't get in (removed by the host, or the game already started) sees why on its own card, in place
   // of the name step, with one key back to home.
+  // The keys on each card: "ask" (ask the host, or ask again after a Not now), "solo" (Draw on my own: Quick draw on
+  // this phone) and "home" (Back to home, or Cancel while waiting).
+  const GATE_KEYS = { removed: ["solo", "home"], full: ["solo", "home"], started: ["ask", "solo", "home"], waiting: ["solo", "home"], notnow: ["ask", "solo", "home"] };
+  let gateKind = null, gateCode = null, gateTimer = 0;
   function showGate(kind, code) {
     const msg = BLOCK_MESSAGES[kind] || BLOCK_MESSAGES.started;
+    gateKind = kind; gateCode = code || null;
     $(room, ".lobby-gate-code").textContent = code || "";
     $(room, ".lobby-gate .lobby-join-room").hidden = !code;
+    $(room, ".lobby-gate-dots").hidden = kind !== "waiting";
     $(room, ".lobby-gate-title").textContent = msg.title;
     $(room, ".lobby-gate-text").textContent = msg.text;
+    const keys = GATE_KEYS[kind] || ["home"];
+    for (const b of room.querySelectorAll(".lobby-gate-key")) b.hidden = !keys.includes(b.dataset.gate) || (b.dataset.gate === "solo" && !document.getElementById("free-play"));
+    $(room, '[data-gate="home"]').textContent = kind === "waiting" ? "Cancel" : "Back to home";
+    clearInterval(gateTimer);
+    gateTimer = 0;
+    if (kind === "notnow") { gateTimer = setInterval(askKeyLabel, 1000); }
+    askKeyLabel();
     pendingCode = null;
     setState("gate");
     if (!room.open) room.showModal();
     $(room, ".lobby-gate-title").focus();
+  }
+  // After a Not now, Ask again waits out the cooldown, counting down on the key.
+  function askKeyLabel() {
+    const b = $(room, '[data-gate="ask"]');
+    const left = gateKind === "notnow" ? askAgainIn(lobby.lastDenied || 0) : 0;
+    b.disabled = left > 0;
+    b.textContent = gateKind === "notnow" ? (left > 0 ? `Ask again in ${left}s` : "Ask again") : "Ask to join";
+    if (!left && gateTimer) { clearInterval(gateTimer); gateTimer = 0; }
   }
   setState("room");
   const isHost = () => lobby.players.length > 0 && lobby.players[0].id === me.id;
@@ -693,7 +766,7 @@
       return;
     }
     // The room locked when its game started, and this player wasn't in it: out, with a message saying so.
-    if (lockedOut(lobby.players, me.id)) {
+    if (lockedOut(lobby.players, me.id) && Date.now() > lobby.admittedUntil) {
       const code = lobby.code;
       leave();
       showGate("started", code);
@@ -765,8 +838,20 @@
         const next = on ? lockList([...lobby.seen, ...lobby.players.map((p) => p.id)], lobby.kicked) : null;
         if (!next && !lobby.lock) return;
         lobby.lock = next;
+        if (!next) { lobby.asks.clear(); lobby.deniedAt.clear(); emitAsks(); } // open again: anyone waiting just comes in
         track();
       },
+      // Requests to join a game that has started (host only): the list, a callback when it changes, and the answer.
+      joinRequests: () => openAsks(lobby.asks.values()).map((a) => ({ ...a })),
+      onJoinRequests(fn) {
+        lobby.askWatchers.add(fn);
+        const off = () => lobby.askWatchers.delete(fn);
+        subscriptions.push(off);
+        return off;
+      },
+      answerJoin: (id, yes) => answerJoin(id, yes),
+      // True on a phone the host let in after the game started (its first screen says so).
+      joinedLate: () => lobby.joinedLate,
       rename(name) {
         const clean = cleanName(name);
         if (!clean || clean === me.name) return me.name;
@@ -834,6 +919,7 @@
     lobby.gameDef = null;
     lobby.listeners.clear();
     lobby.watchers.clear();
+    lobby.askWatchers.clear();
     stageRoot.replaceChildren();
     if (stage.open) stage.close();
     if (lobby.code) setState("room");
@@ -892,6 +978,9 @@
     channel.on("broadcast", { event: "lobby:kick" }, live(onKick));
     channel.on("broadcast", { event: "lobby:votekick" }, live(onVoteKick));
     channel.on("broadcast", { event: "lobby:ballot" }, live(onBallot));
+    channel.on("broadcast", { event: "lobby:ask" }, live(onAsk));
+    channel.on("broadcast", { event: "lobby:ask-cancel" }, live(onAskCancel));
+    channel.on("broadcast", { event: "lobby:answer" }, (message) => { if (lobby.peek && lobby.peek.channel === channel) onAnswer(message); });
     channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") channel.scrawdleSubscribed = true;
       if (lobby.channel !== channel) return;
@@ -933,10 +1022,93 @@
   function onPeekSync() {
     const p = lobby.peek;
     const players = playersFromState(p.channel.presenceState());
-    const verdict = lockedOut(players, me.id) ? "started" : null;
+    const verdict = joinBlock({ players, me: me.id }); // "full", "started" or null
+    p.locked = verdict;
     if (p.settle) { p.settle(verdict); return; }
-    // Still on the name step when the game starts: say so straight away.
-    if (verdict && room.dataset.state === "name" && pendingCode === p.code) { stopPeek(); showGate(verdict, p.code); }
+    // Waiting for the host, or told Not now, and the room opens again (Play again): come straight in, name and all.
+    if (!verdict && players.length && room.dataset.state === "gate" && ["waiting", "notnow"].includes(gateKind) && gateCode === p.code) admit(p.code);
+  }
+
+  /* ----- asking the host to let this phone in ----- */
+  function requestJoin(code) {
+    const p = lobby.peek;
+    if (!p || p.code !== code) return;
+    p.asking = true;
+    const ask = () => { if (lobby.peek === p && p.asking) p.channel.send({ type: "broadcast", event: "lobby:ask", payload: { id: me.id, name: me.name } }); };
+    ask();
+    clearInterval(p.resend);
+    p.resend = setInterval(ask, 15000); // in case the TV missed it; it keeps one request per phone
+    showGate("waiting", code);
+  }
+  function admit(code) {
+    const p = lobby.peek;
+    if (p) { p.asking = false; clearInterval(p.resend); }
+    clearInterval(gateTimer);
+    gateKind = null;
+    enter(code);
+    lobby.joinedLate = true;
+    lobby.admittedUntil = Date.now() + 8000; // the TV's updated list reaches this phone a moment after its answer
+  }
+  function onAnswer(message) {
+    const p = lobby.peek;
+    const body = unwrap(message) || {};
+    if (!p || !p.asking || body.id !== me.id || typeof body.yes !== "boolean") return;
+    if (body.yes) { admit(p.code); return; }
+    p.asking = false;
+    clearInterval(p.resend);
+    const code = p.code;
+    if (body.reason === "removed") { noteKicked(code); stopPeek(); showGate("removed", code); return; }
+    if (body.reason === "full") { stopPeek(); showGate("full", code); return; }
+    lobby.lastDenied = Date.now();
+    showGate("notnow", code); // still listening: if the room opens again, this phone comes in
+  }
+  async function askAgain() {
+    const code = gateCode;
+    if (!code) return;
+    if (!lobby.peek || lobby.peek.code !== code) {
+      setState("connecting");
+      const verdict = await peek(code);
+      if (verdict === "cancelled") return;
+      if (verdict === "full") { stopPeek(); showGate("full", code); return; }
+    }
+    requestJoin(code); // if the room has opened meanwhile, the host just says yes
+  }
+
+  /* ----- the host's side of a request ----- */
+  function emitAsks() {
+    const list = openAsks(lobby.asks.values());
+    for (const [id, a] of lobby.asks) if (!list.includes(a)) lobby.asks.delete(id);
+    for (const fn of lobby.askWatchers) fn(list.map((a) => ({ ...a })));
+  }
+  function onAsk(message) {
+    if (!isHost()) return;
+    const body = unwrap(message) || {};
+    const decision = askDecision({ ask: body, players: lobby.players, removed: lobby.kicked, pending: lobby.asks, deniedAt: lobby.deniedAt });
+    const a = cleanAsk(body);
+    if (decision === "queue") { lobby.asks.set(a.id, { ...a, at: Date.now() }); emitAsks(); }
+    else if (decision === "removed" || decision === "full") send("lobby:answer", { id: a.id, yes: false, reason: decision });
+    else if (decision === "in" || decision === "open") send("lobby:answer", { id: a.id, yes: true });
+  }
+  function onAskCancel(message) {
+    const body = unwrap(message) || {};
+    if (!isHost() || typeof body.id !== "string" || !lobby.asks.has(body.id)) return;
+    lobby.asks.delete(body.id);
+    emitAsks();
+  }
+  async function answerJoin(id, yes) {
+    if (!isHost() || !lobby.asks.has(id)) return;
+    lobby.asks.delete(id);
+    emitAsks();
+    if (yes && lobby.lock) {
+      lobby.lock = lockList([...lobby.lock, id], lobby.kicked);
+      await track(); // the list first, so the phone is on it when it arrives
+      send("lobby:answer", { id, yes: true });
+    } else if (yes) {
+      send("lobby:answer", { id, yes: true });
+    } else {
+      lobby.deniedAt.set(id, Date.now());
+      send("lobby:answer", { id, yes: false });
+    }
   }
   function stopPeek() {
     const p = lobby.peek;
@@ -944,6 +1116,8 @@
     lobby.peek = null;
     clearTimeout(p.timer);
     if (p.settle) p.settle("cancelled"); // a join that was given up (Leave, Esc) or replaced by another doesn't go on
+    clearInterval(p.resend);
+    if (p.asking) { p.asking = false; Promise.resolve(p.channel.send({ type: "broadcast", event: "lobby:ask-cancel", payload: { id: me.id } })).catch(() => {}); }
     dropChannel(p.channel);
   }
 
@@ -959,6 +1133,9 @@
     lobby.players = [];
     lobby.ready = false;
     lobby.lock = null;
+    lobby.asks.clear();
+    lobby.joinedLate = false;
+    lobby.admittedUntil = 0;
     dropChannel(channel);
     if (room.open) room.close();
     history.replaceState(null, "", location.pathname);
@@ -1022,8 +1199,8 @@
       if (!room.open) room.showModal();
       const verdict = await peek(code);
       if (verdict === "cancelled") return false;
-      if (verdict) { stopPeek(); showGate(verdict, code); return false; }
-      askName(code);
+      if (verdict === "full") { stopPeek(); showGate("full", code); return false; }
+      askName(code); // a game already on: the name first, then this phone asks the host to let it in
       return true;
     } catch (err) {
       console.error("lobby.js: lobby_exists failed", err);
@@ -1057,6 +1234,9 @@
     saveName(me.name, Boolean(typed));
     const code = pendingCode;
     pendingCode = null;
+    const p = lobby.peek && lobby.peek.code === code ? lobby.peek : null;
+    if (p && p.locked === "full") { stopPeek(); showGate("full", code); return; }
+    if (p && p.locked === "started") { requestJoin(code); return; }
     enter(code);
   });
   $(room, ".lobby-join-random").addEventListener("click", () => { joinName.value = randomName(); joinName.focus(); });
@@ -1074,7 +1254,10 @@
   }, true);
 
   $(room, '[data-act="leave"]').addEventListener("click", () => { pendingCode = null; stopPeek(); if (lobby.code) leave(); else if (room.open) room.close(); });
-  $(room, ".lobby-gate-home").addEventListener("click", () => { stopPeek(); if (room.open) room.close(); setState("room"); });
+  const closeGate = () => { clearInterval(gateTimer); gateTimer = 0; gateKind = null; stopPeek(); if (room.open) room.close(); setState("room"); };
+  $(room, '[data-gate="home"]').addEventListener("click", closeGate);
+  $(room, '[data-gate="solo"]').addEventListener("click", () => { closeGate(); const solo = document.getElementById("free-play"); if (solo) solo.click(); });
+  $(room, '[data-gate="ask"]').addEventListener("click", askAgain);
   // A copy icon at the end of the link box, like GitHub's. It turns into a check for a moment once copied.
   const COPY_ICON = copyBtn.innerHTML;
   const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';
@@ -1177,7 +1360,7 @@
     clearTimeout(shuffleTimer);
     shuffleTimer = setTimeout(track, 600); // a few quick presses send one presence update
   });
-  window.addEventListener("pagehide", () => { if (lobby.channel) client.removeChannel(lobby.channel); });
+  window.addEventListener("pagehide", () => { stopPeek(); if (lobby.channel) client.removeChannel(lobby.channel); });
 
   const slot = document.querySelector(".home-actions") || document.querySelector("#setup .home-body") || document.getElementById("setup");
   if (slot) slot.append(card);

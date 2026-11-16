@@ -245,10 +245,44 @@
     function tvTop(extra) {
       return el("header", { className: "pp-top" },
         el("div", { className: "pp-logo" }, "Scrawdle", el("span", { textContent: "!", "aria-hidden": "true" })),
-        roundPill(), extra || null, el("span", { className: "pp-top-gap" }),
+        roundPill(), extra || null, el("span", { className: "pp-top-gap" }), askBanner(),
         game.phase === "lobby" ? null : codeBoard(true),
         el("button", { type: "button", className: "pp-quiet pp-close", onclick: closeRoom }, svg(I.close), el("span", { textContent: "Close room" })));
     }
+    /* ---------- someone asks to join a game that has started (TV) ----------
+     * A small lit card in the top strip, between the round counter and the room code, so it never covers the word,
+     * the drawings or the votes: "<name> wants to join", Let in (violet) and Not now. One at a time, oldest first,
+     * with "+2 more" when others are waiting. It stays until the host answers or the phone gives up; the podium
+     * doesn't show it, and Play again lets everyone waiting straight in (lobby.js). */
+    let asks = [];
+    function askBanner() {
+      if (!amHost || !asks.length || game.phase === "lobby" || game.phase === "final") return null;
+      const a = asks[0];
+      return el("div", { className: "pp-ask", role: "group", "aria-label": `${a.name} wants to join` },
+        el("p", { className: "pp-ask-text" }, svg(I.phone, "pp-ask-ico"), el("b", { textContent: a.name }), el("span", { textContent: " wants to join" })),
+        el("div", { className: "pp-ask-keys" },
+          el("button", { type: "button", className: "pp-ask-key", "data-focus": "ask-yes", onclick: () => ctx.answerJoin(a.id, true) }, "Let in"),
+          el("button", { type: "button", className: "pp-ask-key pp-ask-no", "data-focus": "ask-no", onclick: () => ctx.answerJoin(a.id, false) }, "Not now"),
+          asks.length > 1 ? el("span", { className: "pp-ask-more", textContent: `+${asks.length - 1} more` }) : null));
+    }
+    function refreshAsks() {
+      const top = view.querySelector(".pp-top");
+      if (!top) return;
+      const old = top.querySelector(".pp-ask");
+      const was = old && old.contains(document.activeElement) ? document.activeElement.dataset.focus : null;
+      const fresh = askBanner();
+      if (old && fresh) old.replaceWith(fresh); else if (old) old.remove(); else if (fresh) top.querySelector(".pp-top-gap").after(fresh);
+      if (was && fresh) fresh.querySelector(`[data-focus="${was}"]`).focus();
+    }
+    if (amHost && typeof ctx.onJoinRequests === "function") {
+      ctx.onJoinRequests((list) => {
+        const fresh = list.filter((a) => !asks.some((b) => b.id === a.id));
+        asks = list;
+        refreshAsks();
+        if (fresh.length && game.phase !== "lobby" && game.phase !== "final") announce(`${fresh[0].name} wants to join.`);
+      });
+    }
+
     function phoneTop() {
       return el("header", { className: "pp-ptop" },
         el("span", { className: "pp-plogo", textContent: "Scrawdle" }),
@@ -1124,8 +1158,9 @@
       game.settings = R.cleanSettings(d.settings);
       game.total = d.total || 0;
       if (d.phase && d.phase !== "lobby" && Number.isInteger(d.round)) game.round = d.round; // the round on the phone's top bar
-      // Once a game starts the room is locked, so a phone arriving mid-game is a player coming back.
-      if (d.phase && d.phase !== "lobby" && d.phase !== "final") { game.phase = "wait"; phoneWait("Welcome back! A round is on right now. You'll draw in the next one."); }
+      // Once a game starts the room is locked, so a phone arriving mid-game is coming back, or the host let it in.
+      const late = typeof ctx.joinedLate === "function" && ctx.joinedLate();
+      if (d.phase && d.phase !== "lobby" && d.phase !== "final") { game.phase = "wait"; phoneWait(late ? "The host let you in. You'll draw in the next round." : "Welcome back! A round is on right now. You'll draw in the next one."); }
       else if (d.phase === "final") phoneWait("The game just finished. Wait for the host to start another one!");
     }
 

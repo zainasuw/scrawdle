@@ -76,7 +76,7 @@ During the build, `build/write-config.js` writes them into `frontend/supabase-co
 
 ## About
 
-Scrawdle is designed and built by Zainab Stanikzy:
+What Scrawdle includes:
 
 - A same-room party game: a TV host screen, joining by room code on phones, rounds, anonymous voting, points, a scoreboard and a winner podium.
 - One word to draw, picked by an animated 3D dice roll from an original list of 252 kid-friendly words.

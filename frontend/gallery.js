@@ -110,22 +110,10 @@
     const reportedIds = () => {
       try { return JSON.parse(localStorage.getItem(REPORTED_KEY) || "[]"); } catch (err) { return []; }
     };
-    // The question before a report, in the game's own box (the browser's confirm() looks like an error).
-    let reportBox = null;
-    function askReport() {
-      if (!reportBox) {
-        reportBox = document.createElement("dialog");
-        reportBox.className = "ask-box";
-        reportBox.innerHTML = '<h2>Report this drawing?</h2><p>It is hidden from everyone once 3 players report it.</p><div class="ask-actions"><button type="button" class="btn primary" value="yes">Report drawing</button><button type="button" class="quiet" value="no">Cancel</button></div>';
-        document.body.append(reportBox);
-        reportBox.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) reportBox.close(b.value); else if (e.target === reportBox) reportBox.close("no"); });
-      }
-      return new Promise((resolve) => {
-        reportBox.addEventListener("close", () => resolve(reportBox.returnValue === "yes"), { once: true });
-        reportBox.returnValue = "no";
-        reportBox.showModal();
-      });
-    }
+    // The question before a report, in the game's own yes/no box (ask.js; the browser's confirm() looks like an error).
+    const askReport = () => (typeof root.scrawdleAsk === "function"
+      ? root.scrawdleAsk({ title: "Report this drawing?", body: "It is hidden from everyone once 3 players report it.", yes: "Report", no: "Cancel" })
+      : Promise.resolve(confirm("Report this drawing? It is hidden from everyone once 3 players report it.")));
     function addReport(li, item) {
       const b = document.createElement("button");
       b.type = "button";

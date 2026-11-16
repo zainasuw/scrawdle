@@ -210,6 +210,7 @@
     <div id="tools"></div>
   </section>
 
+  <script src="ask.js"></script>
   <script src="daily.js"></script>
   <script src="dice.js" onerror="this.remove()"></script>
   <script src="streak.js"></script>
@@ -481,24 +482,8 @@
       board.toast(published ? "Your published drawing stays up. The finished one is kept in My drawings." : "Your finished drawing is kept in My drawings.");
     }
 
-    // A yes/no question in the game's own box. Resolves true only for the yes key; the no key, Esc and a tap outside
-    // the box all answer no, and the no key has the focus to begin with.
-    const askEl = $("ask-box");
-    function ask({ title, body, yes, no }) {
-      askEl.querySelector("#ask-title").textContent = title;
-      askEl.querySelector("#ask-body").textContent = body || "";
-      askEl.querySelector("#ask-body").hidden = !body;
-      askEl.querySelector('[value="yes"]').textContent = yes;
-      askEl.querySelector('[value="no"]').textContent = no;
-      return new Promise((resolve) => {
-        askEl.addEventListener("close", () => resolve(askEl.returnValue === "yes"), { once: true });
-        askEl.returnValue = "no";
-        askEl.showModal();
-        askEl.querySelector('[value="no"]').focus();
-      });
-    }
-    askEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) askEl.close(b.value); else if (e.target === askEl) askEl.close("no"); });
-    window.scrawdleAsk = ask; // the lobby, Scrawdle Party and My drawings ask their questions in the same box
+    // A yes/no question in the game's own box (ask.js); the lobby, Scrawdle Party and My drawings use the same one.
+    const ask = window.scrawdleAsk;
 
     let saved = {};
     let homeDay = null; // the day the home screen was built for; a new day rebuilds it (see below)

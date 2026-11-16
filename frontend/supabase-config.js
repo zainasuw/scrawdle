@@ -6,4 +6,7 @@
 window.SCRAWDLE_SUPABASE = {
   url: "",
   anonKey: "",
+  // The public gallery: Publish on the finish screen, the Public drawings and Leaderboard pages, likes and reports.
+  // false keeps all of it out of the game (party rooms still work; they don't use it). true brings it all back.
+  publicGallery: false,
 };

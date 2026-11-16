@@ -72,7 +72,7 @@ function fakeStorage() {
 function player(client) {
   const file = path.join(__dirname, "../frontend/publish.js");
   delete require.cache[require.resolve(file)];
-  globalThis.SCRAWDLE_SUPABASE = { url: "https://example.test", anonKey: "test" };
+  globalThis.SCRAWDLE_SUPABASE = { url: "https://example.test", anonKey: "test", publicGallery: true };
   globalThis.supabase = { createClient: () => client };
   globalThis.localStorage = fakeStorage();
   globalThis.ScrawdleVotes = require("../frontend/votes.js");

@@ -750,8 +750,12 @@
     const gallery = ScrawdleGallery.createGallery(board);
     const sketchbook = ScrawdleSketchbook.create(board, { onContinue: openSaved });
     $("my-drawings").addEventListener("click", () => sketchbook.show());
-    $("public-drawings").hidden = typeof window.scrawdlePublicGallery !== "function"; // needs the Supabase project; it links to public-drawings/
-    $("leaderboard-link").hidden = typeof window.scrawdlePublicGallery !== "function"; // the same data, ranked (leaderboard.js)
+    // Public drawings and the leaderboard need the Supabase project and the public gallery switched on
+    // (publicGallery in supabase-config.js); without them the links, and the help's lines about them, stay out.
+    const galleryOn = typeof window.scrawdlePublicGallery === "function";
+    $("public-drawings").hidden = !galleryOn; // it links to public-drawings/
+    $("leaderboard-link").hidden = !galleryOn; // the same data, ranked (leaderboard.js)
+    if (!galleryOn) help.querySelectorAll(".help-online").forEach((part) => { part.hidden = true; });
 
     // Host a game presses Create on the Lobby card that lobby.js adds (the card itself is hidden in screens.css);
     // its error message shows under the Host buzzer.
@@ -767,7 +771,7 @@
       $("join-form").hidden = true;
       $("offline-note").hidden = false;
       setupEl.classList.add("offline");
-      help.querySelectorAll(".help-party, .help-online").forEach((part) => { part.hidden = true; }); // the gallery and leaderboard are online too
+      help.querySelectorAll(".help-party").forEach((part) => { part.hidden = true; }); // (the gallery's lines are already out)
     }
     // Quick draw on the stage: the cream die resting on its lit table (dice.js), waiting to be rolled.
     if (window.ScrawdleDice && typeof ScrawdleDice.show === "function") {

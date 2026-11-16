@@ -11,7 +11,7 @@ function load({ rows = {}, error = null, published = {} } = {}) {
   delete require.cache[require.resolve(file)];
   const store = new Map([["scrawdle-published", JSON.stringify(published)]]);
   globalThis.localStorage = { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) };
-  globalThis.SCRAWDLE_SUPABASE = { url: "https://example.test", anonKey: "test" };
+  globalThis.SCRAWDLE_SUPABASE = { url: "https://example.test", anonKey: "test", publicGallery: true };
   globalThis.ScrawdleVotes = require("../frontend/votes.js");
   globalThis.supabase = {
     createClient: () => ({

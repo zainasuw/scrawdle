@@ -24,7 +24,7 @@
        so it is the same page the home screen's dialog used to show, now at its own address.
        The link on the home screen is shown only when the Supabase project is connected. -->
   <div id="page"></div>
-  <p style="margin:0 0 32px;text-align:center"><a class="quiet" href="../leaderboard/">See today's leaderboard</a></p>
+  <p id="lb-link" style="margin:0 0 32px;text-align:center"><a class="quiet" href="../leaderboard/">See today's leaderboard</a></p>
   <noscript><p style="padding:24px;text-align:center">Public drawings needs JavaScript.</p></noscript>
 
   <script src="../votes.js"></script>
@@ -38,9 +38,18 @@
     (() => {
       // Links from a finished drawing still carry ?focus=…; with only Daily Word drawings there's nothing to pick, so it's ignored.
       const gallery = ScrawdleGallery.createGallery(null, { container: document.getElementById("page") });
+      // Off (publicGallery in supabase-config.js) or not connected: a short note and the home key, nothing loads.
       if (typeof window.scrawdlePublicGallery !== "function") {
         document.getElementById("gallery-title").textContent = "Public drawings";
-        document.querySelector(".gallery-note").textContent = "Public drawings isn't connected on this copy of the game.";
+        document.querySelector(".gallery-sub").hidden = true;
+        document.getElementById("lb-link").remove(); // (a page-level p: the hidden attribute alone loses to its reset)
+        const note = document.querySelector(".gallery-note");
+        note.textContent = "Public drawings aren't available right now. ";
+        const home = document.createElement("a");
+        home.className = "quiet";
+        home.href = "../";
+        home.textContent = "Back to home";
+        note.append(home);
       } else {
         gallery.showPublic();
       }

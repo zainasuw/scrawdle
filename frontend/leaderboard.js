@@ -196,9 +196,14 @@
     links.append(pub);
     container.replaceChildren(header, heading, note, body, links);
 
+    // Off (publicGallery in supabase-config.js) or not connected: a short note and the home key, nothing loads.
     if (typeof root.scrawdlePublicGallery !== "function") {
       note.classList.remove("loading");
-      note.textContent = "The leaderboard isn't connected on this copy of the game.";
+      note.textContent = "The leaderboard isn't available right now. ";
+      const go = el("a", "quiet", "Back to home");
+      go.href = "../";
+      note.append(go);
+      links.hidden = true;
       return;
     }
     const posted = typeof root.scrawdleHasPosted === "function" && root.scrawdleHasPosted();

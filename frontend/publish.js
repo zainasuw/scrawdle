@@ -26,6 +26,10 @@
     try { return Boolean(JSON.parse(localStorage.getItem("scrawdle-published") || "{}")[`${day}|${mode}`]); } catch { return false; }
   };
   if (!cfg.url || !cfg.anonKey) return; // no project yet; leave both hooks undefined
+  // The public gallery is behind one switch, publicGallery in supabase-config.js. While it's off none of the hooks
+  // below exist, so the finish screen has no Publish, home has no Public drawings or Leaderboard, the help leaves
+  // them out and their pages say they're not available. Party rooms don't use any of this (lobby.js).
+  if (cfg.publicGallery !== true) return;
 
   if (typeof root.supabase === "undefined" || typeof root.supabase.createClient !== "function") {
     console.error("publish.js: supabase-js didn't load (check the vendor/supabase.js <script> tag in index.html)");

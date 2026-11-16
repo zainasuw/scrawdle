@@ -48,7 +48,13 @@ Party rooms use Supabase Realtime (presence and broadcast), so no extra tables a
 
 ## Deploy
 
-It's a static site: deploy the `frontend` folder to any static host. `vercel.json` already points Vercel at it.
+It's a static site; Vercel is set up for it (`vercel.json`). Import the repo at vercel.com, add these environment variables, and deploy:
+
+- `SUPABASE_URL`: your project's URL
+- `SUPABASE_ANON_KEY`: its publishable (anon) key, never the secret key
+- `PUBLIC_GALLERY`: `true` to turn on the public gallery and leaderboard (off by default)
+
+During the build, `build/write-config.js` writes them into `frontend/supabase-config.js`, so they stay out of the repo. Every push to `main` redeploys.
 
 ## Project layout
 

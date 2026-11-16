@@ -525,8 +525,11 @@
       // Every seat in the room: the filled ones lit in their player's colour, the free ones dim (hidden from screen
       // readers; the "N of 8" count beside the title says how many are free).
       for (const id of drawers) {
+        // Remove: on a seat, it shows when the pointer is over the seat or a key lands on it (always, on a touch
+        // screen). It asks first (lobby.js); the phone is told why and can't come back into this room today.
+        // Lobby only: once the game starts, the players are fixed and nobody is removed from the TV.
         const remove = id !== me && typeof ctx.kick === "function"
-          ? el("button", { type: "button", className: "pp-seat-kick", "aria-label": `Remove ${names[id] || "this player"}`, "data-focus": `kick-${id}`, title: `Remove ${names[id] || "this player"}`, onclick: () => ctx.kick(id) }, svg(I.close))
+          ? el("button", { type: "button", className: "pp-seat-kick", "aria-label": `Remove ${names[id] || "this player"}`, "data-focus": `kick-${id}`, onclick: () => ctx.kick(id) }, svg(I.close), el("span", { textContent: "Remove", "aria-hidden": "true" }))
           : null;
         const li = el("li", { className: "pp-seat" + (host.popped && host.popped.has(id) ? "" : " pop") }, avatar(seatOf(id)), el("span", { className: "pp-seat-name", textContent: names[id] || "Player" }), id === me ? tag("you", "ink") : null, remove);
         li.style.setProperty("--c", colourOf(seatOf(id)));

@@ -535,7 +535,7 @@
   /* ----- kicking ----- */
   async function hostKick(target) {
     if (!isHost() || target === me.id) return;
-    if (!await askBox({ title: `Kick ${nameOf(target)}?`, body: "They won't be able to rejoin this lobby today.", yes: "Kick", no: "Keep them" })) return;
+    if (!await askBox({ title: `Remove ${nameOf(target)}?`, body: "They'll leave this room and can't join it again today.", yes: "Remove", no: "Keep them" })) return;
     lobby.kicked.add(target);
     send("lobby:kick", { target, by: me.id });
     if (lobby.lock && lobby.lock.includes(target)) { lobby.lock = lobby.lock.filter((id) => id !== target); track(); }
@@ -545,7 +545,8 @@
     const code = lobby.code;
     leave();
     if (code) noteKicked(code);
-    homeError(byVote ? "You were voted out of that lobby." : "You were removed from that lobby.");
+    if (byVote) homeError("You were voted out of that lobby.");
+    else showGate("removed", code);
   }
 
   function onKick(message) {
@@ -1008,7 +1009,7 @@
     notice("");
     const code = normalizeCode(raw);
     if (!code) { notice(`Codes are ${CODE_LENGTH} letters, like BKQZ.`); return false; }
-    if (wasKicked(readKicks(), code, today())) { notice("You were removed from that room, so you can't rejoin it today."); return false; }
+    if (joinBlock({ kicks: readKicks(), code, day: today() })) { showGate("removed", code); return false; }
     busy(true);
     try {
       const { data, error } = await client.rpc("lobby_exists", { lobby_code: code });

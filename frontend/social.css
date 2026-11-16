@@ -731,13 +731,19 @@
 #lobby-game .pp-seat { padding-bottom: calc(var(--u) * 1); }
 #lobby-game .pp-seat.pop { animation: pp-rise-in 560ms var(--ease-out) both; }
 #lobby-game .pp-seat .pp-tag-ink { position: absolute; z-index: 2; top: calc(var(--u) * 1.6); right: 0; }
+/* Remove: a small violet key over the seat's corner, shown while the pointer is on the seat or a key lands on it, and
+ * always on a touch screen. It asks first. */
 #lobby-game .pp-seat-kick {
-  position: absolute; z-index: 2; left: 0; top: calc(var(--u) * 1.4); width: calc(var(--u) * 2.4); height: calc(var(--u) * 2.4); min-width: 32px; min-height: 32px;
-  display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: var(--plum); color: var(--text);
-  box-shadow: 0 0 0 2px var(--bezel); cursor: pointer; opacity: 0; transition: opacity var(--fast);
+  position: absolute; z-index: 3; left: calc(var(--u) * -.4); top: calc(var(--u) * 1.2);
+  display: inline-flex; align-items: center; gap: calc(var(--u) * .35); min-height: max(44px, calc(var(--u) * 2.4)); padding: 0 calc(var(--u) * .8) 0 calc(var(--u) * .55);
+  border: 0; border-radius: 999px; background: var(--key); color: var(--text); font: 800 calc(var(--u) * 1.05)/1 var(--font-ui); cursor: pointer;
+  box-shadow: 0 calc(var(--u) * .2) 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2), 0 calc(var(--u) * .5) calc(var(--u) * 1) rgb(0 0 0 / .45);
+  opacity: 0; transition: opacity var(--fast) var(--ease-out), background var(--fast);
 }
+#lobby-game .pp-seat-kick:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
 #lobby-game .pp-seat:hover .pp-seat-kick, #lobby-game .pp-seat-kick:focus-visible { opacity: 1; }
-#lobby-game .pp-seat-kick .pp-ico { width: 60%; height: 60%; }
+@media (hover: none) { #lobby-game .pp-seat-kick { opacity: 1; } }
+#lobby-game .pp-seat-kick .pp-ico { width: calc(var(--u) * 1.15); height: calc(var(--u) * 1.15); min-width: 14px; min-height: 14px; }
 /* The seats not yet taken (the room holds 8): dim podiums with an empty dashed place for a face. */
 #lobby-game .pp-seat.open { --c: #4A3D78; opacity: .55; }
 #lobby-game .pp-seat.open .pp-av { background: rgb(11 9 38 / .55); border: calc(var(--u) * .2) dashed rgb(201 190 240 / .45); box-shadow: 0 calc(var(--u) * .4) calc(var(--u) * 1) rgb(0 0 0 / .35); }

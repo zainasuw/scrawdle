@@ -75,6 +75,7 @@
     copy: line('<rect x="11" y="11" width="15" height="15" rx="3"/><path d="M6 20V9a3 3 0 0 1 3-3h11"/>'),
     message: line('<path d="M5 8a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H13l-6 5v-5H8a3 3 0 0 1-3-3z"/>'),
     share: line('<path d="M16 4v15"/><path d="M10 10l6-6 6 6"/><path d="M9 15H7v12h18V15h-2"/>'),
+    eye: line('<path d="M3 16s5-9 13-9 13 9 13 9-5 9-13 9S3 16 3 16z"/><circle cx="16" cy="16" r="4"/>'),
     play: `<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M10 6.5v19l16-9.5z" fill="currentColor" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></svg>`,
     sparkle: `<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M30 4c2.6 15 9 21.4 26 26-17 4.6-23.4 11-26 26-2.6-15-9-21.4-26-26 17-4.6 23.4-11 26-26z" fill="#FFC23D"/></svg>`,
     // drawing tools (the party board)
@@ -477,23 +478,42 @@
         const fresh = copyKey(); const focused = document.activeElement === b; b.replaceWith(fresh); if (focused) fresh.focus();
       });
     }
-    // Text a link: the device's share sheet where it has one (phones, Safari, Chrome on a laptop), which offers
-    // Messages and the other apps; elsewhere a text message, already written, with the link in it.
+    // The third key: the device's share sheet where it has one (phones, Safari, Chrome on a laptop), which offers
+    // Messages and the other apps. A touch screen with no share sheet gets a text message, already written, with the
+    // link in it. A computer with a mouse and no share sheet can't send a text (sms: does nothing there), so its key
+    // is Show link: the link in big letters under the keys, to read out or type into a chat.
+    const hasShare = () => typeof navigator.share === "function";
+    const finePointer = () => typeof matchMedia === "function" && matchMedia("(pointer: fine)").matches;
     function shareKey() {
       const body = Invite ? Invite.smsBody(roomLink, ctx.code) : roomLink;
-      if (typeof navigator.share === "function") {
+      if (hasShare()) {
         return el("button", { type: "button", className: "pp-key", "data-focus": "share", onclick: async () => {
           try { await navigator.share({ title: "Scrawdle", text: Invite ? Invite.inviteText(ctx.code) : "", url: roomLink }); }
-          catch (err) { if (!err || err.name !== "AbortError") location.href = Invite ? Invite.smsHref(body) : roomLink; }
+          catch (err) { if (!err || err.name !== "AbortError") showLink(true); }
         } }, svg(I.share), el("span", { textContent: "Share link" }));
       }
+      if (finePointer()) {
+        const b = el("button", { type: "button", className: "pp-key", "data-focus": "share", "aria-expanded": String(Boolean(host.showLink)), "aria-controls": "pp-invite-link", onclick: () => showLink(!host.showLink) },
+          svg(I.eye), el("span", { textContent: host.showLink ? "Hide link" : "Show link" }));
+        return b;
+      }
       return el("a", { className: "pp-key", "data-focus": "share", href: Invite ? Invite.smsHref(body) : roomLink }, svg(I.message), el("span", { textContent: "Text a link" }));
+    }
+    // The link as it's read out: no https://, and a line break allowed before /?CODE so the code stays whole.
+    const linkText = () => { const bare = roomLink.replace(/^https?:\/\//, ""); const at = bare.indexOf("/?"); return at < 0 ? [bare] : [bare.slice(0, at), el("wbr"), el("span", { className: "pp-invite-code", textContent: bare.slice(at) })]; };
+    function showLink(on) {
+      host.showLink = on;
+      const note = view.querySelector(".pp-invite-link");
+      if (note) { note.hidden = !on; note.replaceChildren(...(on ? linkText() : [])); }
+      const old = view.querySelector('[data-focus="share"]');
+      if (old) { const fresh = shareKey(); const focused = document.activeElement === old; old.replaceWith(fresh); if (focused) fresh.focus(); }
+      if (on) announce(`The room link is ${roomLink}`);
     }
     function invitePanel() {
       return el("div", { className: "pp-scan" },
         qrBoard(),
         el("div", { className: "pp-invite", role: "group", "aria-label": "Send the link" }, copyKey(), shareKey()),
-        el("p", { className: "pp-invite-link", hidden: true }));
+        el("p", { className: "pp-invite-link", id: "pp-invite-link", hidden: !host.showLink }, ...(host.showLink ? linkText() : [])));
     }
 
     function tvLobby() {

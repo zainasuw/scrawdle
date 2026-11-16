@@ -61,11 +61,13 @@
     <p class="help-small">Your drawing saves in this browser as you go. Undo is Ctrl+Z (Cmd+Z on a Mac).<span class="help-online"> Today's drawings leave the gallery at midnight.</span></p>
   </dialog>
 
-  <!-- A yes/no question in the game's own box, only for what can't be undone (Discard, Delete, Kick): never the browser's grey confirm. -->
+  <!-- A yes/no question in the game's own box, only for what can't be undone (Remove, Delete, Close room, Leave): never
+       the browser's grey confirm. Two violet keys the same size, the safe answer first and focused; Esc is the safe
+       answer too. The thing being asked about is never the screen's gold action. -->
   <dialog id="ask-box" class="ask-box" aria-labelledby="ask-title" aria-describedby="ask-body">
     <h2 id="ask-title"></h2>
     <p id="ask-body"></p>
-    <div class="ask-actions"><button type="button" class="btn primary" value="yes"></button><button type="button" class="quiet" value="no"></button></div>
+    <div class="ask-actions"><button type="button" class="ask-key" value="no"></button><button type="button" class="ask-key" value="yes"></button></div>
   </dialog>
 
   <!-- Leaving a drawing: keep it (saving is automatic; it goes to My drawings) or discard it. Esc, or a tap outside, keeps drawing. -->
@@ -479,7 +481,8 @@
       board.toast(published ? "Your published drawing stays up. The finished one is kept in My drawings." : "Your finished drawing is kept in My drawings.");
     }
 
-    // A yes/no question in the game's own box. Resolves true for the first button.
+    // A yes/no question in the game's own box. Resolves true only for the yes key; the no key, Esc and a tap outside
+    // the box all answer no, and the no key has the focus to begin with.
     const askEl = $("ask-box");
     function ask({ title, body, yes, no }) {
       askEl.querySelector("#ask-title").textContent = title;
@@ -491,7 +494,7 @@
         askEl.addEventListener("close", () => resolve(askEl.returnValue === "yes"), { once: true });
         askEl.returnValue = "no";
         askEl.showModal();
-        askEl.querySelector('[value="yes"]').focus();
+        askEl.querySelector('[value="no"]').focus();
       });
     }
     askEl.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) askEl.close(b.value); else if (e.target === askEl) askEl.close("no"); });

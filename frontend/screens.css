@@ -1041,15 +1041,15 @@ body::before, :is(#finish, #sketchbook, dialog#gallery)::before {
 :is(.ask-box, #leave-drawing) .quiet { color: var(--text); }
 #leave-drawing .btn.primary { font-size: 22px; min-height: 56px; }
 /* The yes/no box's two keys: violet, the same size, side by side (stacked on a narrow phone). */
-.ask-box .ask-key {
+#ask-box .ask-key {
   position: relative; flex: 1 1 160px; display: inline-flex; align-items: center; justify-content: center;
   min-height: 56px; margin: 0; padding: 8px 22px; border: 0; border-radius: 16px;
   background: var(--key); color: var(--text); font: 800 18px/1.15 var(--font-ui); text-align: center;
   box-shadow: 0 5px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2);
   transition: transform var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out);
 }
-.ask-box .ask-key:hover { background: var(--key-hover); }
-.ask-box .ask-key:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
+#ask-box .ask-key:hover { background: var(--key-hover); }
+#ask-box .ask-key:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--key-base), inset 0 2px 0 rgb(255 255 255 / .2); }
 #leave-drawing .leave-thumb { display: block; width: 100%; max-width: 230px; height: auto; margin: 0 auto 16px; border: 5px solid #120C35; border-radius: 16px; background: #fff; box-shadow: 0 0 0 3px var(--gold), 0 12px 24px rgb(0 0 0 / .5); }
 #leave-drawing .leave-delete { color: #FFB3B3; text-decoration-color: rgb(255 107 107 / .6); }
 

@@ -77,7 +77,9 @@
 
 #lobby[data-state="name"] .lobby-connecting, #lobby[data-state="name"] .lobby-body,
 #lobby[data-state="connecting"] .lobby-join, #lobby[data-state="connecting"] .lobby-body,
-#lobby[data-state="room"] .lobby-join, #lobby[data-state="room"] .lobby-connecting { display: none; }
+#lobby[data-state="room"] .lobby-join, #lobby[data-state="room"] .lobby-connecting,
+#lobby:not([data-state="gate"]) .lobby-gate,
+#lobby[data-state="gate"] :is(.lobby-join, .lobby-connecting, .lobby-body, [data-act="leave"]) { display: none; }
 
 /* The name step: a buzzer pad with the room's code on a little lit board. */
 #lobby .lobby-join {
@@ -109,6 +111,24 @@
   align-self: center; min-height: 44px; padding: 0 14px; border: 0; background: none; color: var(--teal);
   font: 700 15px var(--font-ui); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; cursor: pointer;
 }
+
+/* Can't get in (the host removed this phone, or the game already started): the name step's pad, saying why, with one
+ * violet key back to home. */
+#lobby .lobby-gate {
+  position: relative; width: min(100%, 420px); margin: auto; padding: 22px 22px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background: var(--pad); border-radius: 30px; text-align: center;
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / .22), inset 0 -6px 0 rgb(0 0 0 / .35), 0 0 0 2px var(--bezel), 0 18px 40px rgb(0 0 0 / .5);
+  animation: pp-rise-in var(--slow) var(--ease-out) both;
+}
+#lobby .lobby-gate-title { margin: 6px 0 0; font-family: var(--font-show); font-weight: 400; font-size: 30px; line-height: 1.12; color: var(--text); text-wrap: balance; outline: none; }
+#lobby .lobby-gate-text { margin: 0; max-width: 30ch; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--text-2); text-wrap: pretty; }
+#lobby .lobby-gate-home {
+  position: relative; top: 0; align-self: stretch; margin-top: 8px; min-height: 56px; padding: 0 22px; border: 0; border-radius: 16px;
+  background: var(--key); color: var(--text); font: 800 19px/1 var(--font-ui); cursor: pointer;
+  box-shadow: 0 5px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); transition: top var(--fast) var(--ease-out), box-shadow var(--fast) var(--ease-out), background var(--fast);
+}
+#lobby .lobby-gate-home:hover { background: linear-gradient(180deg, #5641B8, #4330A0); }
+#lobby .lobby-gate-home:active { top: 4px; box-shadow: 0 1px 0 var(--key-edge), inset 0 2px 0 rgb(255 255 255 / .2); }
 
 /* Joining…: three bulbs light up in turn. */
 #lobby .lobby-connecting { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }

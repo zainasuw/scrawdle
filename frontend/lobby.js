@@ -125,11 +125,13 @@
     for (const metas of Object.values(state || {})) {
       const meta = Array.isArray(metas) ? metas[metas.length - 1] : null;
       if (!meta || typeof meta.id !== "string" || typeof meta.name !== "string") continue;
+      const lock = cleanLock(meta.lock); // only the host's counts (see roomLock)
       players.push({
         id: meta.id,
         name: cleanName(meta.name) || "Player",
         joinedAt: Number(meta.joinedAt) || 0,
         game: typeof meta.game === "string" ? meta.game : null,
+        ...(lock ? { lock } : {}),
       });
     }
     players.sort((a, b) => a.joinedAt - b.joinedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -209,7 +211,49 @@
     return out;
   }
 
-  const pure = { MAX_PLAYERS, CODE_LENGTH, normalizeCode, codeFromSearch, lobbyLink, cleanName, randomName, unusedName, seatPicks, playersFromState, isOverCap, activeGameOf, unwrap, VOTE_MS, VOTE_COOLDOWN_MS, VOTE_MIN_PLAYERS, mayKick, voteBlocker, voteOutcome, voteEnforcer, wasKicked, rememberKick };
+  /* ----- Locking the room once a game starts -----
+   * When a game starts, the host's presence entry carries `lock`: the ids of everyone who was in the room (and not
+   * removed) up to then. Nobody else gets in until the host unlocks it (back to the lobby for another game). Players on
+   * the list who drop out (a phone that locks, a reload in the same tab) can come back: a player's id stays the same
+   * for the life of the tab (sessionStorage), and the lock is by id. */
+  const LOCK_MAX = 64;
+  // A lock as it arrives in presence: a list of ids, or null for an open room. Anything else is an open room.
+  function cleanLock(value) {
+    if (!Array.isArray(value)) return null;
+    return value.filter((id) => typeof id === "string" && id.length > 0 && id.length <= 80).slice(0, LOCK_MAX);
+  }
+  // Who may stay in once the room locks: everyone seen in it so far, minus anyone the host removed.
+  function lockList(seenIds, removedIds) {
+    const removed = new Set(removedIds || []);
+    return [...new Set(seenIds || [])].filter((id) => typeof id === "string" && !removed.has(id)).slice(0, LOCK_MAX);
+  }
+  // The room's lock is the host's (players[0]) entry's; null while the room is open.
+  function roomLock(players) {
+    const host = Array.isArray(players) ? players[0] : null;
+    return host && Array.isArray(host.lock) ? host.lock : null;
+  }
+  // True when the room is locked and this player isn't one of the people in the game (the host never is locked out).
+  function lockedOut(players, myId) {
+    const lock = roomLock(players);
+    if (!lock) return false;
+    if (players[0].id === myId) return false;
+    return !lock.includes(myId);
+  }
+  // Why this browser can't go into a room, or null if it can: "removed" (the host removed it from this room today)
+  // comes first, then "started" (the room locked when its game started, and this player wasn't in it).
+  function joinBlock({ kicks, code, day, players, me }) {
+    if (code && wasKicked(kicks, code, day)) return "removed";
+    if (players && lockedOut(players, me)) return "started";
+    return null;
+  }
+  // What a phone sees when it can't get in. Kid-friendly, and says what to do next.
+  const BLOCK_MESSAGES = {
+    removed: { title: "The host removed you from this room.", text: "You can still draw on your own, or join another room." },
+    started: { title: "This game has already started.", text: "Ask the host to start a new room." },
+  };
+
+  const pure = { MAX_PLAYERS, CODE_LENGTH, normalizeCode, codeFromSearch, lobbyLink, cleanName, randomName, unusedName, seatPicks, playersFromState, isOverCap, activeGameOf, unwrap, VOTE_MS, VOTE_COOLDOWN_MS, VOTE_MIN_PLAYERS, mayKick, voteBlocker, voteOutcome, voteEnforcer, wasKicked, rememberKick,
+    LOCK_MAX, cleanLock, lockList, roomLock, lockedOut, joinBlock, BLOCK_MESSAGES };
   if (typeof module !== "undefined" && module.exports) { module.exports = pure; return; }
 
   /* ---------- Browser side ---------- */
@@ -271,7 +315,9 @@
   const JOIN_WINDOW_MS = 4000; // how long after arriving you can be dropped into a game already running
   const me = { id: storedId(), name: storedName() };
   const lobby = { code: null, channel: null, joinedAt: 0, players: [], game: null, cleanup: null, listeners: new Map(), watchers: new Set(), gameDef: null, ready: false,
-    kicked: new Set(), passedVotes: new Set(), vote: null, voteTimer: 0, cooldowns: new Map(), rekickedAt: new Map() };
+    kicked: new Set(), passedVotes: new Set(), vote: null, voteTimer: 0, cooldowns: new Map(), rekickedAt: new Map(),
+    seen: new Set(), lock: null, // the host's: everyone seen in the room while it was open, and the lock once a game starts
+    peek: null, closing: null }; // a room's channel opened before its name step, to see whether it's locked; a channel on its way out
 
   // Lobbies this browser was kicked from today, so the same invite link can't put it back in.
   const KICKS_KEY = "scrawdle-lobby-kicks"; // localStorage: { CODE: "YYYY-MM-DD" }
@@ -302,6 +348,12 @@
       <button type="submit" class="lobby-join-go">Join the game</button>
       <button type="button" class="lobby-join-random">Give me a silly name</button>
     </form>
+    <section class="lobby-gate" aria-labelledby="lobby-gate-title" aria-describedby="lobby-gate-text">
+      <p class="lobby-join-room">Room <b class="lobby-join-code lobby-gate-code"></b></p>
+      <h1 class="lobby-gate-title" id="lobby-gate-title" tabindex="-1"></h1>
+      <p class="lobby-gate-text" id="lobby-gate-text"></p>
+      <button type="button" class="lobby-gate-home">Back to home</button>
+    </section>
     <div class="lobby-connecting" role="status"><span class="lobby-connecting-dots" aria-hidden="true"><i></i><i></i><i></i></span><p class="lobby-connecting-text">Joining the room…</p></div>
     <div class="lobby-body">
       <p class="eyebrow">Share the link or the code with friends.</p>
@@ -344,9 +396,9 @@
   stageMenu.setAttribute("aria-label", "Players");
   stage.append(stageRoot, stagePlayersBtn, stageMenu);
   document.body.append(room, stage);
-  for (const d of [room, stage]) d.addEventListener("cancel", (e) => { if (d === room && room.dataset.state === "name") return; e.preventDefault(); }); // Esc shouldn't drop you out (it may close the name step)
+  for (const d of [room, stage]) d.addEventListener("cancel", (e) => { if (d === room && ["name", "gate"].includes(room.dataset.state)) return; e.preventDefault(); }); // Esc shouldn't drop you out (it may close the name step, or the card saying you can't get in)
   // Browsers let a second Esc close a dialog anyway. If that happens mid-lobby, put it back.
-  room.addEventListener("close", () => { if (lobby.code && !room.open) room.showModal(); else if (!lobby.code) pendingCode = null; });
+  room.addEventListener("close", () => { if (lobby.code && !room.open) room.showModal(); else if (!lobby.code) { pendingCode = null; stopPeek(); } });
   stage.addEventListener("close", () => { if (lobby.game && !stage.open) stage.showModal(); });
 
   const linkEl = $(room, ".lobby-link");
@@ -368,8 +420,21 @@
   const joinForm = $(room, ".lobby-join"), joinName = $(room, ".lobby-join-name"), connectingText = $(room, ".lobby-connecting-text");
   const setState = (state) => {
     room.dataset.state = state;
-    room.setAttribute("aria-labelledby", state === "name" ? "lobby-join-title" : "lobby-code");
+    room.setAttribute("aria-labelledby", state === "name" ? "lobby-join-title" : state === "gate" ? "lobby-gate-title" : "lobby-code");
   };
+  // A phone that can't get in (removed by the host, or the game already started) sees why on its own card, in place
+  // of the name step, with one key back to home.
+  function showGate(kind, code) {
+    const msg = BLOCK_MESSAGES[kind] || BLOCK_MESSAGES.started;
+    $(room, ".lobby-gate-code").textContent = code || "";
+    $(room, ".lobby-gate .lobby-join-room").hidden = !code;
+    $(room, ".lobby-gate-title").textContent = msg.title;
+    $(room, ".lobby-gate-text").textContent = msg.text;
+    pendingCode = null;
+    setState("gate");
+    if (!room.open) room.showModal();
+    $(room, ".lobby-gate-title").focus();
+  }
   setState("room");
   const isHost = () => lobby.players.length > 0 && lobby.players[0].id === me.id;
   const nameOf = (id) => (lobby.players.find((p) => p.id === id) || {}).name || "A player";
@@ -473,6 +538,7 @@
     if (!await askBox({ title: `Kick ${nameOf(target)}?`, body: "They won't be able to rejoin this lobby today.", yes: "Kick", no: "Keep them" })) return;
     lobby.kicked.add(target);
     send("lobby:kick", { target, by: me.id });
+    if (lobby.lock && lobby.lock.includes(target)) { lobby.lock = lobby.lock.filter((id) => id !== target); track(); }
   }
 
   function beKicked(byVote) {
@@ -614,7 +680,7 @@
     if (!lobby.channel) return Promise.resolve();
     return lobby.channel.send({ type: "broadcast", event, payload });
   }
-  const myMeta = () => ({ id: me.id, name: me.name, joinedAt: lobby.joinedAt, game: lobby.game });
+  const myMeta = () => ({ id: me.id, name: me.name, joinedAt: lobby.joinedAt, game: lobby.game, ...(lobby.lock ? { lock: lobby.lock } : {}) });
   const track = () => (lobby.channel ? lobby.channel.track(myMeta()) : Promise.resolve());
 
   function onSync() {
@@ -625,6 +691,14 @@
       homeError(`That lobby is full (${MAX_PLAYERS} players).`);
       return;
     }
+    // The room locked when its game started, and this player wasn't in it: out, with a message saying so.
+    if (lockedOut(lobby.players, me.id)) {
+      const code = lobby.code;
+      leave();
+      showGate("started", code);
+      return;
+    }
+    if (isHost() && !lobby.lock) for (const p of lobby.players) lobby.seen.add(p.id); // who may come back once it locks
     lobby.ready = true;
     freshenName();
     renderPlayers();
@@ -683,6 +757,15 @@
         return off;
       },
       kick: (id) => hostKick(id),
+      // The host locks the room when the game starts (nobody new gets in; players already in it can drop out and
+      // come back) and unlocks it when it's back in the lobby. Only the host's lock counts; it travels in presence.
+      lock(on) {
+        if (!isHost()) return;
+        const next = on ? lockList([...lobby.seen, ...lobby.players.map((p) => p.id)], lobby.kicked) : null;
+        if (!next && !lobby.lock) return;
+        lobby.lock = next;
+        track();
+      },
       rename(name) {
         const clean = cleanName(name);
         if (!clean || clean === me.name) return me.name;
@@ -770,6 +853,8 @@
     lobby.passedVotes = new Set();
     lobby.cooldowns = new Map();
     lobby.rekickedAt = new Map();
+    lobby.seen = new Set();
+    lobby.lock = null;
     linkEl.value = lobbyLink(location.origin, location.pathname, code);
     nameEl.value = me.name;
     connectingText.textContent = `Joining room ${code}…`;
@@ -780,12 +865,26 @@
     renderGames();
     history.replaceState(null, "", `${location.pathname}?${code}`);
 
-    const channel = client.channel(`lobby-${code}`, { config: { presence: { key: me.id }, broadcast: { self: true } } });
+    // The channel opened before the name step (to see whether the room is locked) is this room's: use it. Supabase
+    // keeps one channel per room name, so a second one for the same room would be that same channel.
+    const peeked = lobby.peek && lobby.peek.code === code ? lobby.peek.channel : null;
+    lobby.peek = null;
+    const channel = peeked || openChannel(code);
     lobby.channel = channel;
-    // Events can still arrive from a channel we've already left (untracking fires one more sync),
-    // so every handler checks this is still the lobby we're in.
+    if (channel.scrawdleSubscribed) { setStatus(""); track(); } // already connected: just say we're here
+    if (!room.open) room.showModal();
+  }
+
+  // One room's channel, with every handler on it. Events can still arrive from a channel we've already left
+  // (untracking fires one more sync), so every handler checks this is still the lobby we're in. Before the name step
+  // the channel only listens (nothing is sent and nobody sees us), to find out whether the room is locked.
+  function openChannel(code) {
+    const channel = client.channel(`lobby-${code}`, { config: { presence: { key: me.id }, broadcast: { self: true } } });
     const live = (fn) => (...args) => { if (lobby.channel === channel) fn(...args); };
-    channel.on("presence", { event: "sync" }, live(onSync));
+    channel.on("presence", { event: "sync" }, () => {
+      if (lobby.channel === channel) onSync();
+      else if (lobby.peek && lobby.peek.channel === channel) onPeekSync();
+    });
     channel.on("broadcast", { event: "lobby:start" }, live(onStart));
     channel.on("broadcast", { event: "lobby:end" }, live(onEnd));
     channel.on("broadcast", { event: "game" }, live(onGameMessage));
@@ -793,6 +892,7 @@
     channel.on("broadcast", { event: "lobby:votekick" }, live(onVoteKick));
     channel.on("broadcast", { event: "lobby:ballot" }, live(onBallot));
     channel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") channel.scrawdleSubscribed = true;
       if (lobby.channel !== channel) return;
       if (status === "SUBSCRIBED") {
         setStatus("");
@@ -801,7 +901,49 @@
         setStatus("Connection trouble. Trying to reconnect…");
       }
     });
-    if (!room.open) room.showModal();
+    return channel;
+  }
+
+  // Close a channel. Supabase hands back the same channel for a room until the old one has gone, so the next
+  // channel for any room waits for this (a moment at most).
+  function dropChannel(channel) {
+    if (!channel) return;
+    Promise.resolve(channel.untrack && channel.untrack()).catch(() => {});
+    const gone = Promise.resolve(client.removeChannel(channel)).catch(() => {});
+    lobby.closing = Promise.race([gone, new Promise((r) => setTimeout(r, 2000))]);
+  }
+
+  /* ----- before the name step: is the room locked? ----- */
+  // Listens on the room for a moment (up to PEEK_MS) without joining it, and settles as soon as the room's state
+  // arrives: "started" if it locked when its game started and this player wasn't in it, else null. No answer in time
+  // counts as open; the check runs again once inside (onSync), so a locked room still turns this player away.
+  const PEEK_MS = 2500;
+  async function peek(code) {
+    stopPeek();
+    if (lobby.closing) await lobby.closing;
+    return new Promise((resolve) => {
+      const p = { code, channel: null, settle: null, timer: 0 };
+      p.settle = (verdict) => { if (!p.settle) return; p.settle = null; clearTimeout(p.timer); resolve(verdict); };
+      lobby.peek = p;
+      p.channel = openChannel(code);
+      p.timer = setTimeout(() => p.settle && p.settle(null), PEEK_MS);
+    });
+  }
+  function onPeekSync() {
+    const p = lobby.peek;
+    const players = playersFromState(p.channel.presenceState());
+    const verdict = lockedOut(players, me.id) ? "started" : null;
+    if (p.settle) { p.settle(verdict); return; }
+    // Still on the name step when the game starts: say so straight away.
+    if (verdict && room.dataset.state === "name" && pendingCode === p.code) { stopPeek(); showGate(verdict, p.code); }
+  }
+  function stopPeek() {
+    const p = lobby.peek;
+    if (!p) return;
+    lobby.peek = null;
+    clearTimeout(p.timer);
+    if (p.settle) p.settle("cancelled"); // a join that was given up (Leave, Esc) or replaced by another doesn't go on
+    dropChannel(p.channel);
   }
 
   function leave() {
@@ -815,10 +957,8 @@
     lobby.code = null;
     lobby.players = [];
     lobby.ready = false;
-    if (channel) {
-      Promise.resolve(channel.untrack()).catch(() => {});
-      client.removeChannel(channel);
-    }
+    lobby.lock = null;
+    dropChannel(channel);
     if (room.open) room.close();
     history.replaceState(null, "", location.pathname);
   }
@@ -874,6 +1014,14 @@
       const { data, error } = await client.rpc("lobby_exists", { lobby_code: code });
       if (error) throw error;
       if (!data) { notice("No game has that code. Check the letters on the big screen and try again."); return false; }
+      if (lobby.code) leave();
+      // A moment on "Joining room…" while the room says whether its game has already started.
+      connectingText.textContent = `Joining room ${code}…`;
+      setState("connecting");
+      if (!room.open) room.showModal();
+      const verdict = await peek(code);
+      if (verdict === "cancelled") return false;
+      if (verdict) { stopPeek(); showGate(verdict, code); return false; }
       askName(code);
       return true;
     } catch (err) {
@@ -891,6 +1039,7 @@
   let pendingCode = null;
   function askName(code) {
     if (lobby.code) leave();
+    if (lobby.peek && lobby.peek.code !== code) stopPeek();
     pendingCode = code;
     $(room, ".lobby-join-code").textContent = code;
     joinName.value = nameWasChosen() ? me.name : "";
@@ -923,7 +1072,8 @@
     joinLobby(code);
   }, true);
 
-  $(room, '[data-act="leave"]').addEventListener("click", () => { pendingCode = null; if (lobby.code) leave(); else if (room.open) room.close(); });
+  $(room, '[data-act="leave"]').addEventListener("click", () => { pendingCode = null; stopPeek(); if (lobby.code) leave(); else if (room.open) room.close(); });
+  $(room, ".lobby-gate-home").addEventListener("click", () => { stopPeek(); if (room.open) room.close(); setState("room"); });
   // A copy icon at the end of the link box, like GitHub's. It turns into a check for a moment once copied.
   const COPY_ICON = copyBtn.innerHTML;
   const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';

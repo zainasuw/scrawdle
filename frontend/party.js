@@ -225,7 +225,7 @@
     const joinHost = location.host || "scrawdle.vercel.app";
     function codeBoard(small) {
       return el("div", { className: `pp-code ${small ? "small" : ""}`.trim() },
-        el("span", { className: "pp-code-lbl" }, "Join on your phone", el("b", { textContent: joinHost })),
+        el("span", { className: "pp-code-lbl" }, "Room code", el("b", { textContent: joinHost })),
         el("span", { className: "pp-code-val", "aria-label": `Code ${ctx.code.split("").join(" ")}` }, ...ctx.code.split("").map((ch) => el("em", { textContent: ch, "aria-hidden": "true" }))));
     }
     function roundPill() {
@@ -419,6 +419,7 @@
     /* =================================== LOBBY =================================== */
     function showLobby() {
       game.phase = "lobby";
+      if (amHost && typeof ctx.lock === "function") ctx.lock(false); // back in the lobby: new players can join again
       if (amHost) tvLobby(); else phoneWait();
     }
 
@@ -598,6 +599,9 @@
       // the per-round guards start over too, or a new game's round 1 would look already done after a game that
       // stopped early (everyone left after round 1, say)
       Object.assign(host, { voteStarted: 0, finished: 0, scoresShown: 0, advanced: 0 });
+      // From now on nobody new can join this room (players already in it can drop out and come back); Play again
+      // opens it again.
+      if (typeof ctx.lock === "function") ctx.lock(true);
       nextRound();
     }
 
@@ -626,7 +630,7 @@
       Object.assign(game, { phase: "roll", round: d.round, total: d.total, category: d.category, word: d.word, seconds: d.seconds, players: d.players, drawings: {}, done: new Set(), order: [], voted: new Set(), myPick: null });
       for (const id of d.players) if (!(id in game.scores)) game.scores[id] = 0;
       game.startedAt = Date.now();
-      if (amHost) tvRound(); else if (inRound()) phoneRoll(); else phoneWait("This round started before you joined. You'll draw in the next one!");
+      if (amHost) tvRound(); else if (inRound()) phoneRoll(); else phoneWait("This round started while you were away. You'll draw in the next one!");
       announce(`Round ${d.round}. Rolling the die.`);
       later(ROLL_MS + WORD_MS, beginDrawing);
     }
@@ -1084,8 +1088,9 @@
       else if (game.phase === "wait" && !amHost) phoneWait(view.querySelector(".pp-lead") ? view.querySelector(".pp-lead").textContent : undefined);
       else if (amHost) refreshStrip();
       if (!amHost) return;
+      // Everyone who has just appeared, new or coming back (a phone that locked, a reload), gets the catch-up.
       const arrived = ids.filter((id) => !host.seen.has(id));
-      arrived.forEach((id) => host.seen.add(id));
+      host.seen = new Set(ids);
       if (arrived.length) ctx.send("sync", { round: game.round, total: game.total, scores: game.scores, names, settings: game.settings, phase: game.phase });
       if (game.phase === "draw" && R.everyoneDone(game.players, ids, [...game.done])) { stop(host.phaseTimer); host.phaseTimer = later(900, startVote); }
       if (game.phase === "vote" && R.everyoneDone(host.voters, ids, Object.keys(host.picks))) finishRound();
@@ -1095,7 +1100,9 @@
       Object.assign(names, d.names || {});
       game.settings = R.cleanSettings(d.settings);
       game.total = d.total || 0;
-      if (d.phase && d.phase !== "lobby" && d.phase !== "final") { game.phase = "wait"; phoneWait(`A round is on right now. You'll draw in the next one!`); }
+      if (d.phase && d.phase !== "lobby" && Number.isInteger(d.round)) game.round = d.round; // the round on the phone's top bar
+      // Once a game starts the room is locked, so a phone arriving mid-game is a player coming back.
+      if (d.phase && d.phase !== "lobby" && d.phase !== "final") { game.phase = "wait"; phoneWait("Welcome back! A round is on right now. You'll draw in the next one."); }
       else if (d.phase === "final") phoneWait("The game just finished. Wait for the host to start another one!");
     }
 

@@ -243,9 +243,10 @@
       if (leave) leave.click();
     }
     function tvTop(extra) {
-      return el("header", { className: "pp-top" },
+      const card = askBanner();
+      return el("header", { className: `pp-top${card ? " has-ask" : ""}` },
         el("div", { className: "pp-logo" }, "Scrawdle", el("span", { textContent: "!", "aria-hidden": "true" })),
-        roundPill(), extra || null, el("span", { className: "pp-top-gap" }), askBanner(),
+        roundPill(), extra || null, el("span", { className: "pp-top-gap" }), card, el("span", { className: "pp-top-gap" }),
         game.phase === "lobby" ? null : codeBoard(true),
         el("button", { type: "button", className: "pp-quiet pp-close", onclick: closeRoom }, svg(I.close), el("span", { textContent: "Close room" })));
     }
@@ -259,11 +260,11 @@
       if (!amHost || !asks.length || game.phase === "lobby" || game.phase === "final") return null;
       const a = asks[0];
       return el("div", { className: "pp-ask", role: "group", "aria-label": `${a.name} wants to join` },
-        el("p", { className: "pp-ask-text" }, svg(I.phone, "pp-ask-ico"), el("b", { textContent: a.name }), el("span", { textContent: " wants to join" })),
-        el("div", { className: "pp-ask-keys" },
-          el("button", { type: "button", className: "pp-ask-key", "data-focus": "ask-yes", onclick: () => ctx.answerJoin(a.id, true) }, "Let in"),
-          el("button", { type: "button", className: "pp-ask-key pp-ask-no", "data-focus": "ask-no", onclick: () => ctx.answerJoin(a.id, false) }, "Not now"),
-          asks.length > 1 ? el("span", { className: "pp-ask-more", textContent: `+${asks.length - 1} more` }) : null));
+        svg(I.phone, "pp-ask-ico"),
+        el("p", { className: "pp-ask-text" }, el("b", { textContent: a.name }), el("span", { textContent: "\u00a0wants to join" })),
+        el("button", { type: "button", className: "pp-ask-key", "data-focus": "ask-yes", onclick: () => ctx.answerJoin(a.id, true) }, "Let in"),
+        el("button", { type: "button", className: "pp-ask-key pp-ask-no", "data-focus": "ask-no", onclick: () => ctx.answerJoin(a.id, false) }, "Not now"),
+        asks.length > 1 ? el("span", { className: "pp-ask-more", textContent: `+${asks.length - 1} more` }) : null);
     }
     function refreshAsks() {
       const top = view.querySelector(".pp-top");
@@ -272,6 +273,7 @@
       const was = old && old.contains(document.activeElement) ? document.activeElement.dataset.focus : null;
       const fresh = askBanner();
       if (old && fresh) old.replaceWith(fresh); else if (old) old.remove(); else if (fresh) top.querySelector(".pp-top-gap").after(fresh);
+      top.classList.toggle("has-ask", Boolean(fresh));
       if (was && fresh) fresh.querySelector(`[data-focus="${was}"]`).focus();
     }
     if (amHost && typeof ctx.onJoinRequests === "function") {
